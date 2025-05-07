@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>IT Asset Management | Save Asset</title>
+    <link rel="stylesheet" href="../styles.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+  </head>
+  <body>
+    <!-- Video Background -->
+    <video autoplay muted loop id="background-video">
+      <source src="../../frontend/media/Windmill.mp4" type="video/mp4" />
+      Your browser does not support the video tag.
+    </video>
+
+    <div class="dashboard">
+      <!-- Updated Sidebar -->
+      <div class="sidebar" id="sidebar">
+        <div class="logo">
+          <img src="../../frontend/media/company-logo.png" alt="Company Logo" />
+        </div>
+        <div class="sidebar-content">
+          <ul>
+            <li>
+              <a href="dashboard.html">
+                <i class="fas fa-home" data-tooltip="Home"></i>
+                <span>Home</span>
+              </a>
+            </li>
+            <li>
+              <a href="asset-tracking.html">
+                <i
+                  class="fas fa-list"
+                  data-tooltip="Inventory & Asset Tracking"
+                ></i>
+                <span>Inventory & Asset Tracking</span>
+              </a>
+            </li>
+            <li>
+              <a href="save-asset.html">
+                <i class="fas fa-plus" data-tooltip="Add New Asset"></i>
+                <span>Add New Asset</span>
+              </a>
+            </li>
+            <li>
+              <a href="asset-history.html">
+                <i class="fas fa-history" data-tooltip="Asset History Log"></i>
+                <span>Asset History Log</span>
+              </a>
+            </li>
+            <li>
+              <a href="#">
+                <i
+                  class="fas fa-check"
+                  data-tooltip="System Allocation & Checklist Form"
+                ></i>
+                <span>System Allocation & Checklist Form</span>
+              </a>
+            </li>
+          </ul>
+        </div>
+        <button class="logout-btn" onclick="window.location.href='index.html'">
+          <i class="fas fa-sign-out-alt" data-tooltip="Logout"></i>
+          <span>Logout</span>
+        </button>
+      </div>
+
+      <!-- Main Content -->
+      <div class="main-content">
+        <!-- Asset Form Card -->
+        <div class="card full-page-card">
+          <h3 class="gradient-text">Add New IT Asset</h3>
+          <form class="asset-form" id="assetForm">
+            <div class="filter-search-container">
+              <div class="filter-group">
+                <select id="tableTypeFilter">
+                  <option value="" disabled selected>Select Asset Type</option>
+                  <option value="systems">Systems</option>
+                  <option value="servers">Servers</option>
+                  <option value="switch">Switch</option>
+                  <option value="firewall">Firewall</option>
+                  <option value="printers_and_scanners">Printers and Scanners</option>
+                </select>
+              </div>
+            </div>
+            <div id="messageContainer" class="message-container"></div>
+            <div class="form-grid-enhanced" id="formContainer"></div>
+            <div id="formButtonContainer" class="button-container" style="display: none;">
+              <button type="submit" class="glow-btn">Add Asset</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <script src="../script.js"></script>
+  </body>
+</html>

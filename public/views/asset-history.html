@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IT Asset Management | Asset History Log</title>
+    <link rel="stylesheet" href="../styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- Video Background -->
+    <video autoplay muted loop id="background-video">
+        <source src="../../frontend/media/Windmill.mp4" type="video/mp4">
+        Your browser does not support the video tag.
+    </video>
+
+    <!-- Error Container -->
+    <div id="errorContainer" style="display: none; position: fixed; top: 10px; right: 10px; background: #ff4444; color: white; padding: 10px; border-radius: 5px;"></div>
+
+    <div class="dashboard">
+        <!-- Sidebar -->
+        <div class="sidebar" id="sidebar">
+            <div class="logo">
+                <img src="../../frontend/media/company-logo.png" alt="Company Logo">
+            </div>
+            <div class="sidebar-content">
+                <ul>
+                    <li>
+                        <a href="dashboard.html">
+                            <i class="fas fa-home" data-tooltip="Home"></i>
+                            <span>Home</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="asset-tracking.html">
+                            <i class="fas fa-list" data-tooltip="Inventory & Asset Tracking"></i>
+                            <span>Inventory & Asset Tracking</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="save-asset.html">
+                            <i class="fas fa-plus" data-tooltip="Add New Asset"></i>
+                            <span>Add New Asset</span>
+                        </a>
+                    </li>
+                    <li class="active">
+                        <a href="asset-history.html">
+                            <i class="fas fa-history" data-tooltip="Asset History Log"></i>
+                            <span>Asset History Log</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#">
+                            <i class="fas fa-check" data-tooltip="System Allocation & Checklist Form"></i>
+                            <span>System Allocation & Checklist Form</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            <button class="logout-btn" onclick="window.location.href='index.html'">
+                <i class="fas fa-sign-out-alt" data-tooltip="Logout"></i>
+                <span>Logout</span>
+            </button>
+        </div>
+
+        <!-- Asset History Content -->
+        <div class="asset-list" id="asset-list">
+            <h3 class="gradient-text">Asset History Log</h3>
+            <div class="filter-search-container">
+                <!-- Table Type Dropdown -->
+                <div class="filter-group">
+                    <select id="historyTableTypeFilter">
+                        <option value="" disabled>Select Asset Type</option>
+                        <option value="systems">Systems</option>
+                        <option value="servers">Servers</option>
+                        <option value="switch">Switch</option>
+                        <option value="firewall">Firewall</option>
+                        <option value="printers_and_scanners">Printers and Scanners</option>
+                    </select>
+                </div>
+                <!-- Search Bar -->
+                <div class="search-bar">
+                    <div class="search-input-wrapper">
+                        <input type="text" id="historySearchInput" placeholder="Search across all fields...">
+                        <span class="search-icon"><i class="fas fa-search"></i></span>
+                    </div>
+                    <button id="historyResetSearchBtn" class="reset-btn">Reset</button>
+                </div>
+            </div>
+            <!-- Message Container -->
+            <div id="historyMessageContainer" class="message-container"></div>
+            <!-- History Grid -->
+            <div class="history-grid-wrapper">
+                <div id="historyAssetGrid" class="history-asset-grid"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../script.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            console.log("DOMContentLoaded event fired for asset-history.html");
+            showAssetHistory();
+        });
+    </script>
+</body>
+</html>

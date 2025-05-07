@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="../styles.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+  </head>
+  <body>
+    <!-- Video Background -->
+    <video autoplay muted loop id="background-video">
+      <source src="../../frontend/media/Windmill.mp4" type="video/mp4" />
+      Your browser does not support the video tag.
+    </video>
+
+    <div class="dashboard">
+      <!-- Sidebar -->
+      <div class="sidebar" id="sidebar">
+        <div class="logo">
+          <img src="../../frontend/media/company-logo.png" alt="Company Logo" />
+        </div>
+        <div class="sidebar-content">
+          <ul>
+            <li>
+              <a href="#">
+                <i class="fas fa-home" data-tooltip="Home"></i>
+                <span>Home</span>
+              </a>
+            </li>
+            <li>
+              <a href="asset-tracking.html">
+                <i
+                  class="fas fa-list"
+                  data-tooltip="Inventory & Asset Tracking"
+                ></i>
+                <span>Inventory & Asset Tracking</span>
+              </a>
+            </li>
+            <li>
+              <a href="save-asset.html">
+                <i class="fas fa-plus" data-tooltip="Add New Asset"></i>
+                <span>Add New Asset</span>
+              </a>
+            </li>
+            <li>
+              <a href="asset-history.html">
+                <i class="fas fa-history" data-tooltip="Asset History Log"></i>
+                <span>Asset History Log</span>
+              </a>
+            </li>
+            <li>
+              <a href="#">
+                <i
+                  class="fas fa-check"
+                  data-tooltip="System Allocation & Checklist Form"
+                ></i>
+                <span>System Allocation & Checklist Form</span>
+              </a>
+            </li>
+          </ul>
+        </div>
+        <button class="logout-btn" onclick="window.location.href='index.html'">
+          <i class="fas fa-sign-out-alt" data-tooltip="Logout"></i>
+          <span>Logout</span>
+        </button>
+      </div>
+
+      <!-- Main Content -->
+      <div class="main-content">
+        <div class="card">
+          <h3>Welcome, User!</h3>
+          <p>Here's a quick overview of your activity.</p>
+        </div>
+
+        <div class="card">
+          <h3>Your Stats</h3>
+          <div class="stats-grid">
+            <div class="stat-card">
+              <h4>Projects</h4>
+              <p>5</p>
+            </div>
+            <div class="stat-card">
+              <h4>Tasks</h4>
+              <p>12</p>
+            </div>
+            <div class="stat-card">
+              <h4>Messages</h4>
+              <p>3</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Recent Activity</h3>
+          <p>No recent activity to display.</p>
+        </div>
+      </div>
+    </div>
+
+    <script src="../script.js"></script>
+    <script src="dashboard.js"></script>
+    <script>
+      (function () {
+        function c() {
+          var b = a.contentDocument || a.contentWindow.document;
+          if (b) {
+            var d = b.createElement("script");
+            d.innerHTML =
+              "window.__CF$cv$params={r:'9385521e0a57bcfd',t:'MTc0NTk5ODA4OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";
+            b.getElementsByTagName("head")[0].appendChild(d);
+          }
+        }
+        if (document.body) {
+          var a = document.createElement("iframe");
+          a.height = 1;
+          a.width = 1;
+          a.style.position = "absolute";
+          a.style.top = 0;
+          a.style.left = 0;
+          a.style.border = "none";
+          a.style.visibility = "hidden";
+          document.body.appendChild(a);
+          if ("loading" !== document.readyState) c();
+          else if (window.addEventListener)
+            document.addEventListener("DOMContentLoaded", c);
+          else {
+            var e = document.onreadystatechange || function () {};
+            document.onreadystatechange = function (b) {
+              e(b);
+              "loading" !== document.readyState &&
+                ((document.onreadystatechange = e), c());
+            };
+          }
+        }
+      })();
+    </script>
+  </body>
+</html>

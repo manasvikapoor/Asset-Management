@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>IT Asset Management | Asset Tracking</title>
+    <link rel="stylesheet" href="../styles.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+    <script src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  </head>
+  <body>
+    <!-- Video Background -->
+    <video autoplay muted loop id="background-video">
+      <source src="../../frontend/media/Windmill.mp4" type="video/mp4" />
+      Your browser does not support the video tag.
+    </video>
+
+    <!-- Error Container -->
+    <div id="errorContainer" style="display: none; position: fixed; top: 10px; right: 10px; background: #ff4444; color: white; padding: 10px; border-radius: 5px;"></div>
+
+    <div class="dashboard">
+      <!-- Sidebar -->
+      <div class="sidebar" id="sidebar">
+        <div class="logo">
+          <img src="../../frontend/media/company-logo.png" alt="Company Logo" />
+        </div>
+        <div class="sidebar-content">
+          <ul>
+            <li>
+              <a href="dashboard.html"
+                ><i class="fas fa-home" data-tooltip="Home"></i
+                ><span>Home</span></a
+              >
+            </li>
+            <li>
+              <a href="asset-tracking.html"
+                ><i
+                  class="fas fa-list"
+                  data-tooltip="Inventory & Asset Tracking"
+                ></i
+                ><span>Inventory & Asset Tracking</span></a
+              >
+            </li>
+            <li>
+              <a href="save-asset.html"
+                ><i class="fas fa-plus" data-tooltip="Add New Asset"></i
+                ><span>Add New Asset</span></a
+              >
+            </li>
+            <li>
+              <a href="asset-history.html"
+                ><i class="fas fa-history" data-tooltip="Asset History Log"></i
+                ><span>Asset History Log</span></a
+              >
+            </li>
+            <li>
+              <a href="#"
+                ><i
+                  class="fas fa-check"
+                  data-tooltip="System Allocation & Checklist Form"
+                ></i
+                ><span>System Allocation & Checklist Form</span></a
+              >
+            </li>
+          </ul>
+        </div>
+        <button class="logout-btn" onclick="window.location.href='index.html'">
+          <i class="fas fa-sign-out-alt" data-tooltip="Logout"></i
+          ><span>Logout</span>
+        </button>
+      </div>
+
+      <!-- Asset List -->
+      <div class="asset-list" id="asset-list">
+        <div class="download-btn-container hidden">
+          <button
+            id="export-excel-btn"
+            class="export-btn"
+            title="Export selected rows to Excel"
+          >
+            <span>Export As</span>
+            <img
+              src="../../frontend/media/excel-logo.png"
+              alt="Excel Logo"
+              class="excel-logo"
+            />
+          </button>
+        </div>
+        <!-- Filter and Search Section -->
+        <div class="filter-search-container">
+          <!-- Table Type Dropdown -->
+          <div class="filter-group">
+            <select id="tableTypeFilter">
+              <option value="">Select Table Type</option>
+              <option value="systems">Systems</option>
+              <option value="servers">Servers</option>
+              <option value="switch">Switch</option>
+              <option value="firewall">Firewall</option>
+              <option value="printers_and_scanners">Printers & Scanners</option>
+            </select>
+          </div>
+          <div class="search-bar hidden">
+            <div class="search-input-wrapper">
+              <span class="search-icon"><i class="fas fa-search"></i></span>
+              <input
+                type="text"
+                id="searchInput"
+                placeholder="Search assets..."
+              />
+            </div>
+          </div>
+          <div class="filter-group hidden">
+            <select id="departmentFilter">
+              <option value="">All Departments</option>
+              <!-- Options will be populated dynamically -->
+            </select>
+            <select id="locationFilter">
+              <option value="">All Locations</option>
+              <!-- Options will be populated dynamically -->
+            </select>
+          </div>
+        </div>
+        <div class="table-wrapper hidden">
+          <table class="asset-table">
+            <thead>
+              <tr id="tableHeaderRow">
+                <!-- Headers will be dynamically generated -->
+              </tr>
+            </thead>
+            <tbody id="assetTableBody"></tbody>
+          </table>
+        </div>
+
+        <!-- Modal for Detailed View -->
+        <div id="assetDetailModal" class="modal">
+          <div class="modal-content">
+            <span class="close-btn">×</span>
+            <h2>Asset Details</h2>
+            <!-- Modal Actions -->
+            <div class="modal-actions">
+              <button class="action-btn edit" id="editAssetBtn">Edit</button>
+              <button
+                class="action-btn save"
+                id="saveAssetBtn"
+                style="display: none"
+              >
+                Save
+              </button>
+            </div>
+            <div id="assetDetailContent" class="modal-body">
+              <!-- Content will be dynamically generated -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="../script.js"></script>
+    <!-- Inline script to add .loaded class and debug DOM elements -->
+    <script>
+      console.log("Inline script running...");
+      const dashboard = document.querySelector(".dashboard");
+      if (dashboard) {
+        console.log("Dashboard element found, adding .loaded class");
+        dashboard.classList.add("loaded");
+      } else {
+        console.error("Dashboard element not found in the DOM");
+      }
+
+      const sidebar = document.getElementById("sidebar");
+      if (sidebar) {
+        console.log("Sidebar element found");
+      } else {
+        console.error("Sidebar element not found in the DOM");
+      }
+
+      const tableTypeFilter = document.getElementById("tableTypeFilter");
+      if (tableTypeFilter) {
+        console.log("Table type filter element found");
+      } else {
+        console.error("Table type filter element not found in the DOM");
+      }
+    </script>
+    <!-- Cloudflare scripts (keeping them as they are) -->
+    <script>
+      (function () {
+        function c() {
+          var b = a.contentDocument || a.contentWindow.document;
+          if (b) {
+            var d = b.createElement("script");
+            d.innerHTML =
+              "window.__CF$cv$params={r:'92665c0cbd801373',t:'MTc0Mjk4OTA4My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";
+            b.getElementsByTagName("head")[0].appendChild(d);
+          }
+        }
+        if (document.body) {
+          var a = document.createElement("iframe");
+          a.height = 1;
+          a.width = 1;
+          a.style.position = "absolute";
+          a.style.top = 0;
+          a.style.left = 0;
+          a.style.border = "none";
+          a.style.visibility = "hidden";
+          document.body.appendChild(a);
+          if ("loading" !== document.readyState) c();
+          else if (window.addEventListener)
+            document.addEventListener("DOMContentLoaded", c);
+          else {
+            var e = document.onreadystatechange || function () {};
+            document.onreadystatechange = function (b) {
+              e(b);
+              "loading" !== document.readyState &&
+                ((document.onreadystatechange = e), c());
+            };
+          }
+        }
+      })();
+    </script>
+    <script>
+      (function () {
+        function c() {
+          var b = a.contentDocument || a.contentWindow.document;
+          if (b) {
+            var d = b.createElement("script");
+            d.innerHTML =
+              "window.__CF$cv$params={r:'92666a9d19d3c00b',t:'MTc0Mjk4OTY4MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";
+            b.getElementsByTagName("head")[0].appendChild(d);
+          }
+        }
+        if (document.body) {
+          var a = document.createElement("iframe");
+          a.height = 1;
+          a.width = 1;
+          a.style.position = "absolute";
+          a.style.top = 0;
+          a.style.left = 0;
+          a.style.border = "none";
+          a.style.visibility = "hidden";
+          document.body.appendChild(a);
+          if ("loading" !== document.readyState) c();
+          else if (window.addEventListener)
+            document.addEventListener("DOMContentLoaded", c);
+          else {
+            var e = document.onreadystatechange || function () {};
+            document.onreadystatechange = function (b) {
+              e(b);
+              "loading" !== document.readyState &&
+                ((document.onreadystatechange = e), c());
+            };
+          }
+        }
+      })();
+    </script>
+    <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'926e15a01a096773',t:'MTc0MzA3MDA4NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
+  </body>
+</html>

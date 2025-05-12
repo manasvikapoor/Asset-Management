@@ -2,6 +2,43 @@ const BACKEND_URL = 'http://localhost:3000'; // Update if your server runs on a 
 
 console.log("script.js loaded successfully");
 
+// Cookie helper functions
+function setCookie(name, value, days) {
+  let expires = "";
+  if (days) {
+    const date = new Date();
+    date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000);
+    expires = "; expires=" + date.toUTCString();
+  }
+  document.cookie = name + "=" + (value || "") + expires + "; path=/; SameSite=Strict";
+}
+
+function getCookie(name) {
+  const nameEQ = name + "=";
+  const ca = document.cookie.split(";");
+  for (let i = 0; i < ca.length; i++) {
+    let c = ca[i];
+    while (c.charAt(0) === " ") c = c.substring(1, c.length);
+    if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+  }
+  return null;
+}
+
+function deleteCookie(name) {
+  document.cookie = name + "=; Max-Age=-99999999; path=/";
+}
+
+// Function to display error messages in the UI
+function showError(formFace, message) {
+  const errorElement = formFace.querySelector(".error-message") || document.createElement("div");
+  errorElement.className = "error-message";
+  errorElement.id = formFace.querySelector("form").ariaDescribedBy;
+  errorElement.textContent = message;
+  errorElement.style.display = "block";
+  formFace.querySelector(".auth-form").prepend(errorElement);
+  setTimeout(() => (errorElement.style.display = "none"), 5000);
+}
+
 // Variables for filtering, searching, sorting, and table type
 let allAssets = []; // Store all fetched data
 let sortColumn = null; // Default to null to disable initial sorting
@@ -9,7 +46,6 @@ let sortDirection = "asc"; // Default sort direction
 let currentTableType = ""; // Store the selected table type
 const cube = document.getElementById('cube');
 const video = document.getElementById('background-video');
-
 
 // Cube rotation functions
 function rotateToLogin() {
@@ -38,6 +74,14 @@ document.querySelectorAll('.toggle-password').forEach(toggle => {
           toggle.classList.remove('active');
       }
   });
+
+  // Add keyboard support for accessibility
+  toggle.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      toggle.click();
+    }
+  });
 });
 
 // Ensure the video plays on page load
@@ -46,6 +90,93 @@ window.addEventListener('load', () => {
       console.log("Autoplay blocked by browser:", error);
   });
 });
+
+// Handle login form submission
+document
+  .querySelector(".face.front form")
+  ?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const button = e.target.querySelector(".auth-btn");
+    const formFace = e.target.closest(".face.front");
+
+    // Show loading state
+    button.disabled = true;
+    button.textContent = "Signing In...";
+
+    const username = document.getElementById("login-username")?.value;
+    const password = document.getElementById("login-password")?.value;
+
+    if (!username || !password) {
+      showError(formFace, "Please enter both username and password");
+      button.disabled = false;
+      button.textContent = "Sign In";
+      return;
+    }
+
+    try {
+      const response = await fetch(`${BACKEND_URL}/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+        credentials: "include", // Send cookies with request
+      });
+      const data = await response.json();
+
+      if (response.ok) {
+        console.log("Login successful, redirecting to dashboard");
+        window.location.href = "public/views/dashboard.html";
+      } else {
+        console.error("Login failed:", data.error);
+        showError(formFace, data.error || "Login failed");
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      showError(formFace, "Server error during login");
+    } finally {
+      button.disabled = false;
+      button.textContent = "Sign In";
+    }
+});
+
+// Check authentication on page load
+document.addEventListener("DOMContentLoaded", async () => {
+  if (window.location.pathname.includes("index.html") || window.location.pathname === "/") {
+    try {
+      const response = await fetch(`${BACKEND_URL}/check-auth`, {
+        credentials: "include", // Send cookies with request
+      });
+      const data = await response.json();
+
+      if (data.authenticated) {
+        console.log("User is authenticated, redirecting to dashboard");
+        window.location.href = "dashboard.html";
+      }
+    } catch (error) {
+      console.error("Auth check error:", error);
+    }
+  }
+});
+
+// Handle logout
+function logout() {
+  console.log("Logout initiated");
+  fetch(`${BACKEND_URL}/logout`, {
+    method: "POST",
+    credentials: "include",
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      console.log("Logout response:", data);
+      if (data.message) {
+        console.log("Logout successful, redirecting to index.html");
+        window.location.href = "index.html";
+      }
+    })
+    .catch((error) => {
+      console.error("Logout error:", error);
+      alert("Error during logout");
+    });
+}
 
 // Define visible columns for each table type
 const visibleColumnsMap = {
@@ -102,7 +233,7 @@ const primaryKeyFieldsMap = {
   printers_and_scanners: ["sr_no", "asset_tag"]
 };
 
-// Define non-required fields for each table type (fields that should NOT have an asterisk or be required)
+// Define non-required fields for each table type
 const nonRequiredFieldsMap = {
   systems: ["remarks"],
   servers: ["remarks"],
@@ -133,13 +264,35 @@ function getColumnValue(item, columnName) {
   return matchingKey ? item[matchingKey] : undefined;
 }
 
-// Helper function to calculate the width of text (for dynamic column sizing)
+// Helper function to normalize a date string
+function normalizeDateAsUTC(dateValue) {
+  if (!dateValue) return "";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
+    return dateValue;
+  }
+  const date = new Date(dateValue);
+  if (isNaN(date.getTime())) return dateValue;
+  const pad = num => num.toString().padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}`;
+}
+
+// Helper function to format dates for display
+function formatDateForDisplay(dateValue) {
+  return normalizeDateAsUTC(dateValue);
+}
+
+// Helper function to normalize dates for comparison
+function normalizeDateForComparison(dateValue) {
+  return normalizeDateAsUTC(dateValue);
+}
+
+// Helper function to calculate the width of text
 function getTextWidth(text, font = "16px Arial") {
   const canvas = document.createElement("canvas");
   const context = canvas.getContext("2d");
   context.font = font;
   const metrics = context.measureText(text);
-  return metrics.width + 20; // Add padding
+  return metrics.width + 20;
 }
 
 // Helper function to show error messages
@@ -178,21 +331,17 @@ function showSuccessMessage(message, container) {
 
 // Function to toggle the expanded state of a card
 function toggleCard(card) {
-  // Collapse all other cards
   document.querySelectorAll('.history-asset-card').forEach(c => {
     if (c !== card) {
       c.classList.remove('expanded');
     }
   });
-  // Toggle the clicked card
   card.classList.toggle('expanded');
 }
 
 // Function to show asset history in the Asset History Log tab
 async function showAssetHistory() {
   console.log("Entering showAssetHistory");
-
-  // Reference existing elements from asset-history.html
   const historyTableTypeFilter = document.getElementById("historyTableTypeFilter");
   const historySearchInput = document.getElementById("historySearchInput");
   const historyResetSearchBtn = document.getElementById("historyResetSearchBtn");
@@ -215,13 +364,10 @@ async function showAssetHistory() {
   }
   console.log("All required DOM elements found");
 
-  // Store fetched assets and their change history
   let historyAssets = [];
   let filteredAssets = [];
-  let assetChangeHistoryMap = new Map(); // Map to store change history for each asset
-  console.log("Initialized historyAssets, filteredAssets, and assetChangeHistoryMap");
+  let assetChangeHistoryMap = new Map();
 
-  // Helper function to fetch change history for an asset
   async function fetchChangeHistory(asset, tableType) {
     console.log(`Entering fetchChangeHistory for asset ${asset.sr_no}, tableType: ${tableType}`);
     const body = { tableType };
@@ -229,102 +375,70 @@ async function showAssetHistory() {
       body.sr_no = asset.sr_no;
       body.machine_asset_tag = asset.machine_asset_tag;
       body.monitor_asset_tag = asset.monitor_asset_tag;
-      console.log("Body for systems:", body);
     } else {
       body.sr_no = asset.sr_no;
       body.asset_tag = asset.asset_tag;
-      console.log("Body for non-systems:", body);
     }
 
     try {
-      console.log("Making fetch request to /assetHistory");
       const response = await fetch(`${BACKEND_URL}/assetHistory`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(body),
+        credentials: "include",
       });
 
-      console.log(`Fetch response status: ${response.status}`);
       if (!response.ok) {
-        console.error(`Fetch response not ok: ${response.status} ${response.statusText}`);
         throw new Error("Failed to fetch asset history");
       }
 
       const data = await response.json();
-      console.log(`Fetched change history for asset ${asset.sr_no}:`, data.history || []);
-      console.log(`Exiting fetchChangeHistory for asset ${asset.sr_no}`);
       return data.history || [];
     } catch (error) {
       console.error(`Error fetching asset history for asset ${asset.sr_no}:`, error.message);
-      console.log(`Exiting fetchChangeHistory for asset ${asset.sr_no} with error`);
       return [];
     }
   }
 
-  // Function to render assets as cards, showing details from the main table
   async function renderAssets(assets) {
     console.log("Entering renderAssets");
-    console.log(`Rendering assets, total assets: ${assets.length}`);
-    console.log("Assets:", assets);
-    historyAssetGrid.innerHTML = ""; // Clear the grid
-    console.log("Cleared historyAssetGrid");
-
+    historyAssetGrid.innerHTML = "";
     if (assets.length === 0) {
-      console.log("No assets available to render");
       historyAssetGrid.innerHTML = '<p class="empty-message">No assets with changes available.</p>';
-      console.log("Set historyAssetGrid to 'No assets with changes available'");
-      console.log("Exiting renderAssets");
       return;
     }
 
     const tableType = historyTableTypeFilter.value;
-    console.log(`Current tableType: ${tableType}`);
     const allColumns = assets.length > 0 ? Object.keys(assets[0]) : [];
-    console.log(`All columns available: ${allColumns.join(", ")}`);
-
-    let hasRenderedCards = false; // Track if any cards are rendered
-    console.log("Initialized hasRenderedCards to false");
-
-    // Get visible columns for the current table type
     const visibleColumns = visibleColumnsMap[tableType.toLowerCase()] || allColumns;
-    console.log(`Visible columns for ${tableType}:`, visibleColumns);
+    let hasRenderedCards = false;
 
-    // Create a card for each asset
-    console.log("Starting to render cards for assets");
-    assets.forEach((asset, index) => {
-      console.log(`Rendering card for asset ${index + 1}, sr_no: ${asset.sr_no}`);
+    assets.forEach((asset) => {
       const { history } = assetChangeHistoryMap.get(JSON.stringify(asset)) || { history: [] };
-      console.log(`Change history entries for asset ${asset.sr_no}:`, history);
+      if (history.length === 0) return;
 
-      // If no changes exist for this asset, skip rendering it
-      if (history.length === 0) {
-        console.log(`Asset ${asset.sr_no} has no changes, skipping card`);
-        return;
-      }
-
-      console.log(`Asset ${asset.sr_no} has changes, rendering card`);
       const card = document.createElement("div");
       card.classList.add("history-asset-card");
       card.setAttribute("onclick", "toggleCard(this)");
       card.dataset.asset = JSON.stringify(asset);
 
-      // Build the card content, showing details from the main table using visibleColumns
       let cardContent = '<div class="card-content">';
       visibleColumns.forEach(column => {
         if (allColumns.includes(column)) {
           const formattedColumn = formatColumnName(column);
-          const value = asset[column] || "";
+          let value = asset[column] || "";
+          if (column.toLowerCase().includes("date")) {
+            value = formatDateForDisplay(value);
+          }
           cardContent += `
             <p><strong>${formattedColumn}:</strong> ${value}</p>
           `;
-          console.log(`Added field to card: ${formattedColumn}: ${value}`);
         }
       });
       cardContent += '</div>';
 
-      // Add the history details section (hidden by default)
       let historyContent = '<div class="history-details">';
       if (history.length === 0) {
         historyContent += '<p>No changes available for this asset.</p>';
@@ -338,20 +452,19 @@ async function showAssetHistory() {
                 <th>New Value</th>
                 <th>Changed By</th>
                 <th>Change Date</th>
-                <th>Change Time</th>
               </tr>
             </thead>
             <tbody>
         `;
         history.forEach(entry => {
+          const formattedDate = formatDateForDisplay(entry.change_date);
           historyContent += `
             <tr>
               <td>${formatColumnName(entry.field_name)}</td>
               <td>${entry.old_value || ""}</td>
               <td>${entry.new_value || ""}</td>
               <td>${entry.changed_by}</td>
-              <td>${entry.change_date}</td>
-              <td>${entry.change_time}</td>
+              <td>${formattedDate}</td>
             </tr>
           `;
         });
@@ -364,164 +477,82 @@ async function showAssetHistory() {
 
       card.innerHTML = cardContent + historyContent;
       historyAssetGrid.appendChild(card);
-      hasRenderedCards = true; // Mark that a card was rendered
-      console.log(`Appended card for asset ${asset.sr_no} to historyAssetGrid`);
-      console.log(`Set hasRenderedCards to true`);
+      hasRenderedCards = true;
     });
 
-    // If no cards were rendered, display the message
-    console.log(`Checking if any cards were rendered: hasRenderedCards = ${hasRenderedCards}`);
     if (!hasRenderedCards) {
-      console.log("No assets with change history found, displaying message");
       historyAssetGrid.innerHTML = '<p class="empty-message">No assets with changes available.</p>';
-      console.log("Set historyAssetGrid to 'No assets with changes available'");
-    } else {
-      console.log("Cards rendered successfully");
     }
-
-    console.log("Exiting renderAssets");
   }
 
-  // Function to fetch assets and filter only those with changes
   async function fetchAssets(tableType) {
-    console.log("Entering fetchAssets");
-    console.log(`Fetching assets for tableType: ${tableType}`);
     if (!tableType) {
-      console.log("No tableType provided, clearing historyAssetGrid");
       historyAssetGrid.innerHTML = "";
-      console.log("Exiting fetchAssets");
       return;
     }
 
     try {
-      console.log(`Making fetch request to ${BACKEND_URL}/fetchData/${tableType}`);
-      const response = await fetch(`${BACKEND_URL}/fetchData/${tableType}`);
-      console.log(`Fetch response status: ${response.status}`);
-      if (!response.ok) {
-        console.error(`Fetch response not ok: ${response.status} ${response.statusText}`);
-        throw new Error("Failed to fetch assets");
-      }
+      const response = await fetch(`${BACKEND_URL}/fetchData/${tableType}`, { credentials: "include" });
+      if (!response.ok) throw new Error("Failed to fetch assets");
       const allFetchedAssets = await response.json();
-      console.log("Fetched assets:", allFetchedAssets);
-      console.log(`Number of assets fetched: ${allFetchedAssets.length}`);
 
-      // Filter assets to only include those with changes
       historyAssets = [];
       assetChangeHistoryMap.clear();
-      console.log("Cleared assetChangeHistoryMap");
       for (const asset of allFetchedAssets) {
-        console.log(`Checking asset ${asset.sr_no} for changes`);
         const history = await fetchChangeHistory(asset, tableType);
         if (history.length > 0) {
-          console.log(`Asset ${asset.sr_no} has changes, including in historyAssets`);
           historyAssets.push(asset);
           assetChangeHistoryMap.set(JSON.stringify(asset), { history });
-        } else {
-          console.log(`Asset ${asset.sr_no} has no changes, excluding from historyAssets`);
         }
       }
 
-      console.log(`Number of assets with changes: ${historyAssets.length}`);
       filteredAssets = [...historyAssets];
-      console.log("Copied historyAssets to filteredAssets");
-      console.log("Calling renderAssets with filteredAssets");
       await renderAssets(filteredAssets);
-      console.log("Finished rendering assets");
     } catch (error) {
       console.error("Error fetching assets for history:", error.message);
       showErrorMessage("Failed to load assets. Please try again.", historyMessageContainer);
       historyAssetGrid.innerHTML = '<p class="empty-message">Error loading assets.</p>';
-      console.log("Set historyAssetGrid to 'Error loading assets'");
     }
-    console.log("Exiting fetchAssets");
   }
 
-  // Function to apply search filter across visible columns
   async function applySearchFilter() {
-    console.log("Entering applySearchFilter");
     const searchValue = historySearchInput.value.toLowerCase().trim();
     const tableType = historyTableTypeFilter.value;
-
-    console.log(`Applying search filter - Value: ${searchValue}, TableType: ${tableType}`);
-
     const visibleColumns = visibleColumnsMap[tableType.toLowerCase()] || [];
-    console.log(`Visible columns for search: ${visibleColumns.join(", ")}`);
 
     filteredAssets = historyAssets.filter(asset => {
       const { history } = assetChangeHistoryMap.get(JSON.stringify(asset)) || { history: [] };
-      console.log(`Filtering asset ${asset.sr_no}, History length: ${history.length}`);
-      // Only include assets with change history
-      if (history.length === 0) {
-        console.log(`Asset ${asset.sr_no} has no changes, excluding from search`);
-        return false;
-      }
-      const matches = visibleColumns.some(column => {
+      if (history.length === 0) return false;
+      return visibleColumns.some(column => {
         const fieldValue = (asset[column] || "").toString().toLowerCase();
-        console.log(`Checking column ${column}: ${fieldValue} against search value ${searchValue}`);
         return fieldValue.includes(searchValue);
       });
-      console.log(`Asset ${asset.sr_no} matches search: ${matches}`);
-      return matches;
     });
 
-    console.log(`Filtered assets after search: ${filteredAssets.length}`);
-    console.log("Calling renderAssets with filteredAssets");
     await renderAssets(filteredAssets);
-    console.log("Exiting applySearchFilter");
   }
 
-  // Set default value to "systems" and fetch data immediately
-  console.log("Setting default table type to 'systems'");
   historyTableTypeFilter.value = "systems";
-  console.log("Default table type set to: systems for Asset History Log");
-  console.log("Calling fetchAssets with 'systems'");
   fetchAssets("systems");
 
-  // Add change event listener for table type selection
   historyTableTypeFilter.addEventListener("change", async () => {
     const tableType = historyTableTypeFilter.value;
-    console.log(`Table type changed to: ${tableType}`);
-    historySearchInput.value = ""; // Reset search input on table type change
-    console.log("Reset search input");
-    assetChangeHistoryMap.clear(); // Clear the history map when changing table type
-    console.log("Cleared assetChangeHistoryMap");
-    console.log("Calling fetchAssets with new tableType");
-    await fetchAssets(tableType);
-    console.log("Finished handling table type change");
-  });
-
-  // Add input event listener for real-time search
-  historySearchInput.addEventListener("input", () => {
-    console.log("History search input changed");
-    console.log("Calling applySearchFilter");
-    applySearchFilter();
-  });
-
-  // Optional: Keep Enter key functionality as a fallback
-  historySearchInput.addEventListener("keypress", (e) => {
-    if (e.key === "Enter") {
-      console.log("Enter key pressed in history search");
-      console.log("Calling applySearchFilter");
-      applySearchFilter();
-    }
-  });
-
-  // Add reset button event listener
-  historyResetSearchBtn.addEventListener("click", () => {
-    console.log("History reset search button clicked");
     historySearchInput.value = "";
-    console.log("Cleared search input");
+    assetChangeHistoryMap.clear();
+    await fetchAssets(tableType);
+  });
+
+  historySearchInput.addEventListener("input", applySearchFilter);
+  historySearchInput.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") applySearchFilter();
+  });
+
+  historyResetSearchBtn.addEventListener("click", () => {
+    historySearchInput.value = "";
     filteredAssets = [...historyAssets];
-    console.log("Reset filteredAssets to historyAssets");
-    console.log("Calling renderAssets with reset filteredAssets");
     renderAssets(filteredAssets);
   });
-
-  console.log("Exiting showAssetHistory");
 }
-
-// Log to confirm showAssetHistory is defined
-console.log("showAssetHistory defined:", typeof showAssetHistory === "function");
 
 // Wait for DOM to be fully loaded
 document.addEventListener("DOMContentLoaded", function () {
@@ -580,15 +611,14 @@ document.addEventListener("DOMContentLoaded", function () {
       logoutBtn.addEventListener("click", function (e) {
         console.log("Logout button clicked");
         e.preventDefault();
-        const href = this.getAttribute("onclick").match(/'([^']+)'/)[1];
         if (dashboard) {
           console.log("Initiating fade-out transition for logout");
           dashboard.classList.remove("loaded");
           dashboard.classList.add("fade-out");
         }
         setTimeout(() => {
-          console.log(`Navigating to ${href} for logout`);
-          window.location.href = href;
+          console.log("Calling logout function");
+          logout();
         }, 500);
       });
     } else {
@@ -607,32 +637,41 @@ document.addEventListener("DOMContentLoaded", function () {
   if (tableTypeFilter && formContainer && assetForm) {
     console.log("Elements for save-asset.html found, initializing");
 
-    // Function to fetch and display columns for a given table type
+    async function fetchLastSrNo(tableType) {
+      try {
+        console.log(`Fetching last sr_no for ${tableType}`);
+        const response = await fetch(`${BACKEND_URL}/fetchData/${tableType}`, { credentials: "include" });
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Failed to fetch data: ${response.status} - ${errorText}`);
+        }
+        const data = await response.json();
+        const maxSrNo = data.length > 0
+          ? Math.max(...data.map(item => parseInt(item.sr_no, 10)).filter(num => !isNaN(num)))
+          : 0;
+        return maxSrNo;
+      } catch (error) {
+        console.error(`Error fetching last sr_no for ${tableType}:`, error.message);
+        showErrorMessage("Failed to fetch the last serial number. Please try again.", messageContainer);
+        return 0;
+      }
+    }
+
     async function fetchColumnsForTableType(tableType) {
-      const formButtonContainer = document.getElementById(
-        "formButtonContainer"
-      );
+      const formButtonContainer = document.getElementById("formButtonContainer");
       if (!tableType) {
-        console.log("No table type selected, clearing form");
         formContainer.innerHTML = "";
         formButtonContainer.style.display = "none";
         return;
       }
 
       try {
-        console.log(`Fetching columns for ${tableType}`);
-        const response = await fetch(
-          `${BACKEND_URL}/fetchColumns/${tableType}`
-        );
+        const response = await fetch(`${BACKEND_URL}/fetchColumns/${tableType}`, { credentials: "include" });
         if (!response.ok) {
           const errorText = await response.text();
-          throw new Error(
-            `Failed to fetch columns: ${response.status} - ${errorText}`
-          );
+          throw new Error(`Failed to fetch columns: ${response.status} - ${errorText}`);
         }
         const { columns } = await response.json();
-        console.log(`Columns fetched for ${tableType}:`, columns);
-
         const excludedFields = [
           "create_user",
           "create_time",
@@ -647,6 +686,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
         formContainer.innerHTML = "";
         const nonRequiredFields = nonRequiredFieldsMap[tableType] || [];
+        const lastSrNo = await fetchLastSrNo(tableType);
+        const nextSrNo = lastSrNo + 1;
+
         displayColumns.forEach((column) => {
           const div = document.createElement("div");
           div.className = "form-group";
@@ -657,12 +699,21 @@ document.addEventListener("DOMContentLoaded", function () {
 
           let input;
           if (column === "invoice_file") {
-            // Special handling for invoice_file field
             input = document.createElement("input");
             input.type = "file";
             input.id = `${column}Input`;
             input.name = column;
-            input.accept = "application/pdf"; // Restrict to PDF files
+            input.accept = "application/pdf";
+            if (!nonRequiredFields.includes(column)) {
+              input.required = true;
+            }
+          } else if (column === "sr_no") {
+            input = document.createElement("input");
+            input.type = "number";
+            input.id = `${column}Input`;
+            input.name = column;
+            input.value = nextSrNo;
+            input.readOnly = true;
             if (!nonRequiredFields.includes(column)) {
               input.required = true;
             }
@@ -671,7 +722,6 @@ document.addEventListener("DOMContentLoaded", function () {
             input.type = column.includes("date") ? "date" : "text";
             input.id = `${column}Input`;
             input.name = column;
-            if (["sr_no"].includes(column)) input.type = "number";
             if (!nonRequiredFields.includes(column)) {
               input.required = true;
             }
@@ -683,31 +733,20 @@ document.addEventListener("DOMContentLoaded", function () {
           formContainer.appendChild(div);
         });
       } catch (error) {
-        console.error(
-          `Error fetching columns for ${tableType}:`,
-          error.message
-        );
-        showErrorMessage(
-          "Failed to load form fields. Please try again.",
-          messageContainer
-        );
+        console.error(`Error fetching columns for ${tableType}:`, error.message);
+        showErrorMessage("Failed to load form fields. Please try again.", messageContainer);
         formButtonContainer.style.display = "none";
       }
     }
 
-    // Set default value to "systems" and fetch columns immediately
     tableTypeFilter.value = "systems";
-    console.log("Default table type set to: systems");
-    fetchColumnsForTableType("systems"); // Fetch columns for "systems" on page load
+    fetchColumnsForTableType("systems");
 
-    // Add change event listener for subsequent selections
     tableTypeFilter.addEventListener("change", async function () {
       const tableType = this.value;
-      console.log(`Table type selected: ${tableType}`);
       await fetchColumnsForTableType(tableType);
     });
 
-    // Form submission logic (updated to handle file upload)
     assetForm.addEventListener("submit", async function (e) {
       e.preventDefault();
       const tableType = tableTypeFilter.value;
@@ -717,66 +756,50 @@ document.addEventListener("DOMContentLoaded", function () {
       }
 
       const formData = new FormData(this);
-      formData.append("tableType", tableType); // Add tableType to FormData
+      formData.append("tableType", tableType);
 
       try {
-        console.log("Submitting new asset with FormData");
         const response = await fetch(`${BACKEND_URL}/assets`, {
           method: "POST",
-          body: formData, // Send FormData to handle file upload
+          body: formData,
+          credentials: "include",
         });
 
         if (!response.ok) {
           const errorText = await response.text();
-          throw new Error(
-            `Failed to add asset: ${response.status} - ${errorText}`
-          );
+          throw new Error(`Failed to add asset: ${response.status} - ${errorText}`);
         }
 
         const result = await response.json();
-        console.log("Asset added successfully:", result);
         showSuccessMessage("Asset added successfully!", messageContainer);
         assetForm.reset();
         tableTypeFilter.value = "";
         formContainer.innerHTML = "";
+        await fetchColumnsForTableType("systems");
       } catch (error) {
         console.error("Error adding asset:", error.message);
-        showErrorMessage(
-          "Failed to add asset. Please try again.",
-          messageContainer
-        );
+        showErrorMessage("Failed to add asset. Please try again.", messageContainer);
       }
     });
   }
 
-  // Existing logic for asset-tracking.html
   function populateFilters(data, tableType) {
     console.log(`Populating filters for table type: ${tableType}`);
-    const filterGroup = document.querySelector(
-      ".filter-group:not(:first-child)"
-    );
+    const filterGroup = document.querySelector(".filter-group:not(:first-child)");
     if (!filterGroup) {
       console.error("Filter group element not found in the DOM");
       return;
     }
 
     filterGroup.innerHTML = "";
-
     const filterFields = filterFieldsMap[tableType.toLowerCase()] || [];
-    console.log(`Filter fields for ${tableType}:`, filterFields);
 
     filterFields.forEach((filter) => {
       const { field, label } = filter;
-
       const hasField = data.some(
         (item) => getColumnValue(item, field) !== undefined
       );
-      if (!hasField) {
-        console.log(
-          `Field ${field} does not exist in data for ${tableType}, skipping filter`
-        );
-        return;
-      }
+      if (!hasField) return;
 
       const select = document.createElement("select");
       select.id = `${field}Filter`;
@@ -800,7 +823,6 @@ document.addEventListener("DOMContentLoaded", function () {
       filterGroup.appendChild(select);
 
       select.addEventListener("change", () => {
-        console.log(`${label} filter changed to: ${select.value}`);
         const filteredData = applyFiltersAndSearch(allAssets);
         renderTable(filteredData);
       });
@@ -813,7 +835,6 @@ document.addEventListener("DOMContentLoaded", function () {
     filterGroup.appendChild(resetButton);
 
     resetButton.addEventListener("click", () => {
-      console.log("Reset Filters button clicked");
       filterFields.forEach((filter) => {
         const filterElement = document.getElementById(`${filter.field}Filter`);
         if (filterElement) {
@@ -829,9 +850,6 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     if (filterGroup.children.length === 1) {
-      console.log(
-        "No applicable filters for this table type, hiding filter group"
-      );
       filterGroup.classList.add("hidden");
     } else {
       filterGroup.classList.remove("hidden");
@@ -840,12 +858,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function applyFiltersAndSearch(data) {
     console.log("Applying filters and search to data");
-    const searchInput =
-      document.getElementById("searchInput")?.value.toLowerCase() || "";
+    const searchInput = document.getElementById("searchInput")?.value.toLowerCase() || "";
     let filteredData = [...data];
 
     if (searchInput) {
-      console.log(`Filtering data with search term: ${searchInput}`);
       filteredData = filteredData.filter((item) => {
         return Object.values(item).some((value) =>
           (value || "").toString().toLowerCase().includes(searchInput)
@@ -863,7 +879,6 @@ document.addEventListener("DOMContentLoaded", function () {
           filterValue &&
           data.some((item) => getColumnValue(item, field) !== undefined)
         ) {
-          console.log(`Filtering data by ${field}: ${filterValue}`);
           filteredData = filteredData.filter(
             (item) => (getColumnValue(item, field) || "") === filterValue
           );
@@ -872,9 +887,6 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     if (sortColumn) {
-      console.log(
-        `Sorting data by column ${sortColumn} in ${sortDirection} order`
-      );
       filteredData.sort((a, b) => {
         const valueA = (a[sortColumn] || "").toString().toLowerCase();
         const valueB = (b[sortColumn] || "").toString().toLowerCase();
@@ -888,8 +900,6 @@ document.addEventListener("DOMContentLoaded", function () {
           return 0;
         }
       });
-    } else {
-      console.log("No sort column specified, preserving API order");
     }
 
     return filteredData;
@@ -913,20 +923,15 @@ document.addEventListener("DOMContentLoaded", function () {
     tbody.innerHTML = "";
 
     if (data.length === 0) {
-      console.log("No data to display in the table");
-      tbody.innerHTML =
-        '<tr><td colspan="100" class="empty-message">No data available</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="100" class="empty-message">No data available</td></tr>';
       return;
     }
 
     const allColumns = Object.keys(data[0]);
-    const visibleColumns =
-      visibleColumnsMap[currentTableType.toLowerCase()] || allColumns;
-    console.log(`Visible columns for ${currentTableType}:`, visibleColumns);
+    const visibleColumns = visibleColumnsMap[currentTableType.toLowerCase()] || allColumns;
 
     const checkboxHeader = document.createElement("th");
-    checkboxHeader.innerHTML =
-      '<input type="checkbox" id="selectAllCheckbox" />';
+    checkboxHeader.innerHTML = '<input type="checkbox" id="selectAllCheckbox" />';
     headerRow.appendChild(checkboxHeader);
 
     visibleColumns.forEach((column) => {
@@ -946,7 +951,11 @@ document.addEventListener("DOMContentLoaded", function () {
       visibleColumns.forEach((column) => {
         if (allColumns.includes(column)) {
           const td = document.createElement("td");
-          td.textContent = item[column] || "";
+          let value = item[column] || "";
+          if (column.toLowerCase().includes("date")) {
+            value = formatDateForDisplay(value);
+          }
+          td.textContent = value;
           row.appendChild(td);
         }
       });
@@ -971,9 +980,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     rawWidths[0] = 40;
     const totalRawWidth = rawWidths.reduce((sum, width) => sum + width, 0);
-    const tableWrapperWidth = tableWrapper
-      ? tableWrapper.clientWidth
-      : window.innerWidth - 270;
+    const tableWrapperWidth = tableWrapper ? tableWrapper.clientWidth : window.innerWidth - 270;
     const availableWidth = tableWrapperWidth - 40;
     const widthRatio = availableWidth / (totalRawWidth - rawWidths[0]);
 
@@ -996,21 +1003,15 @@ document.addEventListener("DOMContentLoaded", function () {
     const rowCheckboxes = document.querySelectorAll(".row-checkbox");
 
     if (selectAllCheckbox) {
-      console.log("Adding event listener for Select All checkbox");
       selectAllCheckbox.addEventListener("change", function () {
-        console.log("Select All checkbox changed, updating row checkboxes");
         rowCheckboxes.forEach((checkbox) => {
           checkbox.checked = this.checked;
         });
       });
-    } else {
-      console.error("Select All checkbox not found in the DOM");
     }
 
-    console.log(`Found ${rowCheckboxes.length} row checkboxes`);
     rowCheckboxes.forEach((checkbox, index) => {
       checkbox.addEventListener("change", function () {
-        console.log(`Row checkbox ${index + 1} changed`);
         const allChecked = Array.from(rowCheckboxes).every((cb) => cb.checked);
         const someChecked = Array.from(rowCheckboxes).some((cb) => cb.checked);
         selectAllCheckbox.checked = allChecked;
@@ -1018,23 +1019,19 @@ document.addEventListener("DOMContentLoaded", function () {
       });
     });
 
-    console.log(`Adding click event listeners to ${rows.length} table rows`);
     rows.forEach((row, index) => {
       row.addEventListener("click", function (e) {
         if (e.target.type === "checkbox") return;
-        console.log(`Row ${index + 1} clicked, showing item details`);
         const itemData = JSON.parse(this.dataset.item);
         showItemDetails(itemData);
       });
     });
 
     const sortableHeaders = document.querySelectorAll(".sortable");
-    console.log(`Found ${sortableHeaders.length} sortable headers`);
     sortableHeaders.forEach((header) => {
       header.addEventListener("click", () => {
         const column = header.dataset.sort;
         const sortIcon = header.querySelector(".sort-icon");
-        console.log(`Sorting by column: ${column}`);
 
         if (sortColumn === column) {
           sortDirection = sortDirection === "asc" ? "desc" : "asc";
@@ -1059,39 +1056,33 @@ document.addEventListener("DOMContentLoaded", function () {
     try {
       sortColumn = null;
       sortDirection = "asc";
-      console.log(`Fetching data for table type: ${tableType}`);
-      const response = await fetch(
-        `${BACKEND_URL}/fetchData/${tableType}`
-      );
-      if (!response.ok)
-        throw new Error(`Network response was not ok: ${response.statusText}`);
+      const response = await fetch(`${BACKEND_URL}/fetchData/${tableType}`, { credentials: "include" });
+      if (!response.ok) throw new Error(`Network response was not ok: ${response.statusText}`);
       const data = await response.json();
-      console.log(`Data fetched for ${tableType}:`, data);
-      allAssets = data;
 
-      populateFilters(data, tableType);
+      allAssets = data.map(item => {
+        const newItem = { ...item };
+        for (const key in newItem) {
+          if (key.toLowerCase().includes("date")) {
+            newItem[key] = normalizeDateAsUTC(newItem[key]);
+          }
+        }
+        return newItem;
+      });
 
-      const filteredData = applyFiltersAndSearch(data);
+      populateFilters(allAssets, tableType);
+      const filteredData = applyFiltersAndSearch(allAssets);
       renderTable(filteredData);
 
-      console.log("Showing table, search bar, filters, and export button");
       const searchBar = document.querySelector(".search-bar");
-      const filterGroup = document.querySelector(
-        ".filter-group:not(:first-child)"
-      );
-      const downloadBtnContainer = document.querySelector(
-        ".download-btn-container"
-      );
+      const filterGroup = document.querySelector(".filter-group:not(:first-child)");
+      const downloadBtnContainer = document.querySelector(".download-btn-container");
       const tableWrapper = document.querySelector(".table-wrapper");
 
       if (searchBar) searchBar.classList.remove("hidden");
-      else console.error("Search bar element not found");
       if (filterGroup) filterGroup.classList.remove("hidden");
-      else console.error("Filter group not found");
       if (downloadBtnContainer) downloadBtnContainer.classList.remove("hidden");
-      else console.error("Download button container not found");
       if (tableWrapper) tableWrapper.classList.remove("hidden");
-      else console.error("Table wrapper not found");
     } catch (error) {
       console.error(`Error fetching data for ${tableType}:`, error);
       const modalContent = document.getElementById("assetDetailContent");
@@ -1114,41 +1105,25 @@ document.addEventListener("DOMContentLoaded", function () {
       }
       const tbody = document.getElementById("assetTableBody");
       if (tbody) {
-        tbody.innerHTML =
-          '<tr><td colspan="100" class="empty-message">Error loading data</td></tr>';
-      } else {
-        console.error("Asset table body not found in the DOM");
+        tbody.innerHTML = '<tr><td colspan="100" class="empty-message">Error loading data</td></tr>';
       }
     }
   }
 
   const tableTypeFilterTracking = document.getElementById("tableTypeFilter");
   if (tableTypeFilterTracking) {
-    console.log("Table type filter found, adding event listener");
-
-    // Set the default value to "systems"
     tableTypeFilterTracking.value = "systems";
     currentTableType = "systems";
-    console.log("Default table type set to: systems");
-    // Fetch data for "systems" immediately on page load
     fetchData("systems");
 
     tableTypeFilterTracking.addEventListener("change", function () {
       currentTableType = this.value;
-      console.log(`Table type selected: ${currentTableType}`);
       if (currentTableType) {
         fetchData(currentTableType);
       } else {
-        console.log(
-          "No table type selected, hiding table and related elements"
-        );
         const searchBar = document.querySelector(".search-bar");
-        const filterGroup = document.querySelector(
-          ".filter-group:not(:first-child)"
-        );
-        const downloadBtnContainer = document.querySelector(
-          ".download-btn-container"
-        );
+        const filterGroup = document.querySelector(".filter-group:not(:first-child)");
+        const downloadBtnContainer = document.querySelector(".download-btn-container");
         const tableWrapper = document.querySelector(".table-wrapper");
         const tbody = document.getElementById("assetTableBody");
         const headerRow = document.getElementById("tableHeaderRow");
@@ -1161,29 +1136,21 @@ document.addEventListener("DOMContentLoaded", function () {
         if (headerRow) headerRow.innerHTML = "";
       }
     });
-  } else {
-    console.error("Table type filter not found in the DOM");
   }
 
   const searchInput = document.getElementById("searchInput");
   if (searchInput) {
-    console.log("Search input found, adding event listener");
     searchInput.addEventListener("input", () => {
-      console.log("Search input changed, re-rendering table");
       const filteredData = applyFiltersAndSearch(allAssets);
       renderTable(filteredData);
     });
-  } else {
-    console.error("Search input not found in the DOM");
   }
 
-  // Function to show item details in a modal (dynamically generate fields, excluding metadata)
   function showItemDetails(item) {
     console.log("Showing item details in modal:", item);
     const modal = document.getElementById("assetDetailModal");
     const modalContent = document.getElementById("assetDetailContent");
 
-    // Fields to exclude from display
     const excludedFields = [
       "create_user",
       "create_time",
@@ -1195,38 +1162,29 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (modal && modalContent) {
       modalContent.innerHTML = "";
-
-      const existingInputs = modalContent.querySelectorAll(".edit-input");
-      existingInputs.forEach((input) => input.remove());
-      const errorMessage = modalContent.querySelector(".error-message");
-      if (errorMessage) errorMessage.style.display = "none";
-      const successMessage = modalContent.querySelector(".success-message");
-      if (successMessage) successMessage.style.display = "none";
-
-      // Store the original values for comparison later
       const originalValues = { ...item };
 
       for (const [key, value] of Object.entries(item)) {
         if (!excludedFields.includes(key)) {
-          // Skip excluded fields
           const formattedKey = formatColumnName(key);
           const p = document.createElement("p");
+          let displayValue = value;
+
+          if (key.toLowerCase().includes("date")) {
+            displayValue = formatDateForDisplay(value);
+          }
 
           if (key === "invoice_file" && value) {
-            // Special handling for invoice_file: display a clickable link
             const link = document.createElement("a");
-            link.href = `${BACKEND_URL}/${value}`; // e.g., /uploads/17436555411468-94322662-Creaa Designs_AMC.pdf
+            link.href = `${BACKEND_URL}/${value}`;
             link.textContent = "View Invoice";
-            link.target = "_blank"; // Open in a new tab
-            link.style.color = "#00ffcc"; // Optional: style the link
+            link.target = "_blank";
+            link.style.color = "#00ffcc";
             link.style.textDecoration = "underline";
             p.innerHTML = `<strong>${formattedKey}:</strong> `;
             p.appendChild(link);
           } else {
-            // Default handling for other fields
-            p.innerHTML = `<strong>${formattedKey}:</strong> <span class="editable-field" data-field="${key}">${
-              value || ""
-            }</span>`;
+            p.innerHTML = `<strong>${formattedKey}:</strong> <span class="editable-field" data-field="${key}">${displayValue || ""}</span>`;
           }
           modalContent.appendChild(p);
         }
@@ -1234,15 +1192,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
       modal.dataset.item = JSON.stringify(item);
       modal.style.display = "block";
-      console.log("Modal displayed");
 
       const closeBtn = modal.querySelector(".close-btn");
       if (closeBtn) {
-        // Remove existing listeners to prevent duplicates
         const newCloseBtn = closeBtn.cloneNode(true);
         closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
         newCloseBtn.addEventListener("click", () => {
-          console.log("Close button clicked, hiding modal");
           modal.style.display = "none";
           const editBtn = document.getElementById("editAssetBtn");
           const saveBtn = document.getElementById("saveAssetBtn");
@@ -1253,10 +1208,8 @@ document.addEventListener("DOMContentLoaded", function () {
         });
       }
 
-      // Remove existing window click listener to prevent duplicates
       const existingWindowListener = (e) => {
         if (e.target === modal) {
-          console.log("Clicked outside modal, hiding modal");
           modal.style.display = "none";
           const editBtn = document.getElementById("editAssetBtn");
           const saveBtn = document.getElementById("saveAssetBtn");
@@ -1284,21 +1237,18 @@ document.addEventListener("DOMContentLoaded", function () {
         const updatedSaveBtn = document.getElementById("saveAssetBtn");
 
         updatedEditBtn.addEventListener("click", () => {
-          console.log("Edit button clicked, making fields editable");
-          const editableFields =
-            modalContent.querySelectorAll(".editable-field");
+          const editableFields = modalContent.querySelectorAll(".editable-field");
           const primaryKeyFields = primaryKeyFieldsMap[currentTableType.toLowerCase()] || [];
 
           editableFields.forEach((field) => {
             const fieldName = field.dataset.field;
             if (!excludedFields.includes(fieldName) && !primaryKeyFields.includes(fieldName)) {
               const input = document.createElement("input");
-              // Set input type based on field name
               input.type = fieldName.includes("date") || fieldName.includes("Date") ? "date" :
                            fieldName.includes("price") || fieldName.includes("cost") ? "number" :
                            "text";
               input.className = "edit-input";
-              input.value = field.textContent;
+              input.value = fieldName.toLowerCase().includes("date") ? field.textContent : field.textContent;
               input.dataset.field = fieldName;
               field.style.display = "none";
               field.parentElement.appendChild(input);
@@ -1309,19 +1259,33 @@ document.addEventListener("DOMContentLoaded", function () {
         });
 
         updatedSaveBtn.addEventListener("click", async () => {
-          console.log("Save button clicked, checking for updates");
           const updatedItem = JSON.parse(modal.dataset.item);
           const inputs = modalContent.querySelectorAll(".edit-input");
           const updates = {};
           let hasChanges = false;
 
-          // Collect updates, but only include fields that have actually changed
           inputs.forEach((input) => {
             const fieldName = input.dataset.field;
-            const newValue = input.value;
+            let newValue = input.value;
             const originalValue = (originalValues[fieldName] || "").toString();
 
-            // Update the field display regardless of change
+            if (fieldName.toLowerCase().includes("date")) {
+              if (newValue) {
+                const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+                if (!datePattern.test(newValue)) {
+                  showErrorMessage(`Invalid date format for ${fieldName}. Expected YYYY-MM-DD.`, modalContent);
+                  return;
+                }
+              }
+            }
+
+            const normalizedNewValue = fieldName.toLowerCase().includes("date")
+              ? normalizeDateForComparison(newValue)
+              : (newValue || "").toString();
+            const normalizedOriginalValue = fieldName.toLowerCase().includes("date")
+              ? normalizeDateForComparison(originalValue)
+              : originalValue;
+
             const fieldSpan = modalContent.querySelector(
               `.editable-field[data-field="${fieldName}"]`
             );
@@ -1329,47 +1293,38 @@ document.addEventListener("DOMContentLoaded", function () {
             fieldSpan.style.display = "inline";
             input.remove();
 
-            // Only add to updates if the value has changed
-            if (newValue !== originalValue) {
+            if (normalizedNewValue !== normalizedOriginalValue) {
               updates[fieldName] = newValue;
               hasChanges = true;
-              console.log(`Field ${fieldName} changed from "${originalValue}" to "${newValue}"`);
-            } else {
-              console.log(`Field ${fieldName} unchanged, skipping: "${originalValue}"`);
             }
           });
 
           if (!hasChanges) {
-            console.log("No changes detected. Switching back to view mode without closing modal.");
             updatedEditBtn.style.display = "inline-block";
             updatedSaveBtn.style.display = "none";
             return;
           }
 
-          // Proceed with update if there are changes
           Object.assign(updatedItem, updates);
 
           try {
-            console.log("Sending update request with changed fields:", updates);
-            const response = await fetch(
-              `${BACKEND_URL}/assets/updateByKey`,
-              {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
+            const response = await fetch(`${BACKEND_URL}/assets/updateByKey`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                tableType: currentTableType,
+                key: {
+                  sr_no: updatedItem.sr_no,
+                  monitor_asset_tag: updatedItem.monitor_asset_tag || null,
+                  machine_asset_tag: updatedItem.machine_asset_tag || null,
+                  asset_tag: updatedItem.asset_tag || null,
                 },
-                body: JSON.stringify({
-                  tableType: currentTableType,
-                  key: {
-                    sr_no: updatedItem.sr_no,
-                    monitor_asset_tag: updatedItem.monitor_asset_tag || null,
-                    machine_asset_tag: updatedItem.machine_asset_tag || null,
-                    asset_tag: updatedItem.asset_tag || null,
-                  },
-                  updates: updates, // Only includes changed fields
-                }),
-              }
-            );
+                updates: updates,
+              }),
+              credentials: "include",
+            });
 
             if (!response.ok) throw new Error("Failed to update asset");
 
@@ -1378,11 +1333,9 @@ document.addEventListener("DOMContentLoaded", function () {
             const index = allAssets.findIndex((asset) => {
               const matchesSrNo = asset.sr_no === updatedItem.sr_no;
               const matchesMonitorTag =
-                asset.monitor_asset_tag ===
-                (updatedItem.monitor_asset_tag || null);
+                asset.monitor_asset_tag === (updatedItem.monitor_asset_tag || null);
               const matchesMachineTag =
-                asset.machine_asset_tag ===
-                (updatedItem.machine_asset_tag || null);
+                asset.machine_asset_tag === (updatedItem.machine_asset_tag || null);
               const matchesAssetTag =
                 asset.asset_tag === (updatedItem.asset_tag || null);
               if (currentTableType.toLowerCase() === "systems") {
@@ -1393,7 +1346,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
             if (index !== -1) {
               allAssets[index] = updatedItem;
-              console.log("Local data updated");
             }
 
             const filteredData = applyFiltersAndSearch(allAssets);
@@ -1403,25 +1355,16 @@ document.addEventListener("DOMContentLoaded", function () {
             updatedSaveBtn.style.display = "none";
           } catch (error) {
             console.error("Error updating asset:", error);
-            showErrorMessage(
-              "Failed to update asset. Please try again.",
-              modalContent
-            );
+            showErrorMessage("Failed to update asset. Please try again.", modalContent);
           }
         });
-      } else {
-        console.error("Edit or Save button not found in the modal");
       }
-    } else {
-      console.error("Modal or modal content not found in the DOM");
     }
   }
 
   const exportExcelBtn = document.getElementById("export-excel-btn");
   if (exportExcelBtn) {
-    console.log("Export Excel button found, adding event listener");
     exportExcelBtn.addEventListener("click", async function () {
-      console.log("Export Excel button clicked");
       const selectedRows = getSelectedRows();
       if (selectedRows.length > 0) {
         try {
@@ -1431,13 +1374,12 @@ document.addEventListener("DOMContentLoaded", function () {
               "Content-Type": "application/json",
             },
             body: JSON.stringify({ data: selectedRows }),
+            credentials: "include",
           });
 
           if (!response.ok) {
             const errorText = await response.text();
-            throw new Error(
-              `Failed to generate Excel file: ${response.status} - ${errorText}`
-            );
+            throw new Error(`Failed to generate Excel file: ${response.status} - ${errorText}`);
           }
 
           const blob = await response.blob();
@@ -1467,7 +1409,6 @@ document.addEventListener("DOMContentLoaded", function () {
           }
         }
       } else {
-        console.log("No rows selected for export");
         const errorContainer = document.querySelector(".download-btn-container") || document.body;
         showErrorMessage(
           "Please select at least one row to export.",
@@ -1475,12 +1416,9 @@ document.addEventListener("DOMContentLoaded", function () {
         );
       }
     });
-  } else {
-    console.error("Export Excel button not found in the DOM");
   }
 
   function getSelectedRows() {
-    console.log("Getting selected rows for export");
     const selectedRows = [];
     const rowCheckboxes = document.querySelectorAll(".row-checkbox:checked");
 
@@ -1490,7 +1428,6 @@ document.addEventListener("DOMContentLoaded", function () {
       selectedRows.push(itemData);
     });
 
-    console.log(`Selected ${selectedRows.length} rows for export`);
     return selectedRows;
   }
 });

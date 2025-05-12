@@ -1,161 +1,106 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>3D Login & Register</title>
-    <link rel="stylesheet" href="../styles.css" />
-  </head>
-  <body>
-    <!-- Video Background -->
-    <video autoplay muted loop id="background-video">
-      <source src="../../frontend/media/Windmill.mp4" type="video/mp4" />
-      Your browser does not support the video tag.
-    </video>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Asset Management System</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+  <link rel="stylesheet" href="/Asset_Management/public/styles.css" />
+</head>
+<body>
+  <video id="background-video" autoplay loop muted>
+    <source src="../Asset_Management/frontend/media/Windmill.mp4" type="video/mp4" />
+    Your browser does not support the video tag.
+  </video>
 
-    <div class="container">
-      <div class="cube-wrapper">
-        <div class="cube" id="cube">
-          <!-- Login Face -->
-          <div class="face front">
-            <form
-              class="auth-form"
-              onsubmit="event.preventDefault(); window.location.href='dashboard.html';"
-            >
-              <h2>Login</h2>
-              <div class="input-group">
-                <input
-                  type="text"
-                  id="login-username"
-                  name="username"
-                  required
-                />
-                <label for="login-username">Username</label>
-              </div>
-              <div class="input-group">
-                <input
-                  type="password"
-                  id="login-password"
-                  name="password"
-                  required
-                />
-                <label for="login-password">Password</label>
-                <span class="toggle-password" data-target="login-password"
-                  >👁</span
-                >
-              </div>
-              <button type="submit" class="auth-btn">Sign In</button>
-              <div class="toggle-text">
-                <p>
-                  New here?
-                  <a href="#" onclick="rotateToRegister()">Register</a>
-                </p>
-                <p>
-                  Forgot password?
-                  <a href="#" onclick="rotateToReset()">Reset</a>
-                </p>
-              </div>
-            </form>
-          </div>
+  <div class="container">
+    <div class="cube-wrapper">
+      <div class="cube" id="cube">
+        <!-- Login Face -->
+        <div class="face front">
+          <form class="auth-form" aria-describedby="login-error">
+            <div class="error-message" id="login-error"></div>
+            <h2>Login</h2>
+            <div class="input-group">
+              <input type="text" id="login-username" name="username" required />
+              <label for="login-username">Username</label>
+            </div>
+            <div class="input-group">
+              <input type="password" id="login-password" name="password" required />
+              <label for="login-password">Password</label>
+              <span
+                class="toggle-password"
+                data-target="login-password"
+                title="Toggle password visibility"
+                aria-label="Toggle password visibility"
+                tabindex="0"
+              ></span>
+            </div>
+            <button type="submit" class="auth-btn">Sign In</button>
+            <div class="toggle-text">
+              <p>New here? <a href="#" onclick="rotateToRegister()">Register</a></p>
+              <p>Forgot password? <a href="#" onclick="rotateToReset()">Reset</a></p>
+            </div>
+          </form>
+        </div>
 
-          <!-- Register Face -->
-          <div class="face right">
-            <form class="auth-form" onsubmit="event.preventDefault();">
-              <h2>Register</h2>
-              <div class="input-group">
-                <input type="text" id="reg-username" name="username" required />
-                <label for="reg-username">Username</label>
-              </div>
-              <div class="input-group">
-                <input type="email" id="reg-email" name="email" required />
-                <label for="reg-email">Email</label>
-              </div>
-              <div class="input-group">
-                <input
-                  type="password"
-                  id="reg-password"
-                  name="password"
-                  required
-                />
-                <label for="reg-password">Password</label>
-                <span class="toggle-password" data-target="reg-password"
-                  >👁</span
-                >
-              </div>
-              <button type="submit" class="auth-btn">Sign Up</button>
-              <div class="toggle-text">
-                <p>
-                  Have an account?
-                  <a href="#" onclick="rotateToLogin()">Login</a>
-                </p>
-                <p>
-                  Forgot password?
-                  <a href="#" onclick="rotateToReset()">Reset</a>
-                </p>
-              </div>
-            </form>
-          </div>
+        <!-- Register Face -->
+        <div class="face right">
+          <form class="auth-form">
+            <h2>Register</h2>
+            <div class="input-group">
+              <input type="text" id="register-username" name="username" required />
+              <label for="register-username">Username</label>
+            </div>
+            <div class="input-group">
+              <input type="email" id="register-email" name="email" required />
+              <label for="register-email">Email</label>
+            </div>
+            <div class="input-group">
+              <input type="password" id="register-password" name="password" required />
+              <label for="register-password">Password</label>
+              <span
+                class="toggle-password"
+                data-target="register-password"
+                title="Toggle password visibility"
+                aria-label="Toggle password visibility"
+                tabindex="0"
+              ></span>
+            </div>
+            <!-- <div class="input-group">
+              <select id="register-role" name="role" required>
+                <option value="" disabled selected>Select Role</option>
+                <option value="admin">Admin</option>
+                <option value="manager">Manager</option>
+                <option value="employee">Employee</option>
+              </select>
+              <label for="register-role">Role</label>
+            </div> -->
+            <button type="submit" class="auth-btn">Sign Up</button>
+            <div class="toggle-text">
+              <p>Already have an account? <a href="#" onclick="rotateToLogin()">Login</a></p>
+            </div>
+          </form>
+        </div>
 
-          <!-- Reset Password Face -->
-          <div class="face back">
-            <form class="auth-form" onsubmit="event.preventDefault();">
-              <h2>Reset Password</h2>
-              <div class="input-group">
-                <input type="email" id="reset-email" name="email" required />
-                <label for="reset-email">Email</label>
-              </div>
-              <button type="submit" class="auth-btn">Send Reset Link</button>
-              <div class="toggle-text">
-                <p>
-                  Remembered your password?
-                  <a href="#" onclick="rotateToLogin()">Login</a>
-                </p>
-                <p>
-                  New here?
-                  <a href="#" onclick="rotateToRegister()">Register</a>
-                </p>
-              </div>
-            </form>
-          </div>
+        <!-- Reset Password Face -->
+        <div class="face back">
+          <form class="auth-form">
+            <h2>Reset Password</h2>
+            <div class="input-group">
+              <input type="email" id="reset-email" name="email" required />
+              <label for="reset-email">Email</label>
+            </div>
+            <button type="submit" class="auth-btn">Reset Password</button>
+            <div class="toggle-text">
+              <p>Back to <a href="#" onclick="rotateToLogin()">Login</a></p>
+            </div>
+          </form>
         </div>
       </div>
     </div>
+  </div>
 
-    <script src="../script.js"></script>
-    <script>
-      (function () {
-        function c() {
-          var b = a.contentDocument || a.contentWindow.document;
-          if (b) {
-            var d = b.createElement("script");
-            d.innerHTML =
-              "window.__CF$cv$params={r:'93adf201ea7dbfe8',t:'MTc0NjQyNDA2OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";
-            b.getElementsByTagName("head")[0].appendChild(d);
-          }
-        }
-        if (document.body) {
-          var a = document.createElement("iframe");
-          a.height = 1;
-          a.width = 1;
-          a.style.position = "absolute";
-          a.style.top = 0;
-          a.style.left = 0;
-          a.style.border = "none";
-          a.style.visibility = "hidden";
-          document.body.appendChild(a);
-          if ("loading" !== document.readyState) c();
-          else if (window.addEventListener)
-            document.addEventListener("DOMContentLoaded", c);
-          else {
-            var e = document.onreadystatechange || function () {};
-            document.onreadystatechange = function (b) {
-              e(b);
-              "loading" !== document.readyState &&
-                ((document.onreadystatechange = e), c());
-            };
-          }
-        }
-      })();
-    </script>
-  </body>
+  <script src="/Asset_Management/public/script.js"></script>
+</body>
 </html>

@@ -162,27 +162,27 @@ body {
   right: 10px;
   top: 50%;
   transform: translateY(-50%);
-  color: rgba(255, 255, 255, 0.7); /* Default opacity reduced for better contrast */
+  color: rgba(255, 255, 255, 0.7);
   font-size: 1.2em;
   cursor: pointer;
   user-select: none;
   transition: color 0.3s ease, opacity 0.3s ease;
-  padding: 5px; /* Added padding for better click area */
+  padding: 5px;
 }
 
 .toggle-password::before {
   font-family: "Font Awesome 6 Free";
   font-weight: 900;
-  content: "\f070"; /* fa-eye-slash (password hidden) */
+  content: "\f070";
 }
 
 .toggle-password:hover {
   color: #00ffcc;
-  opacity: 1; /* Full opacity on hover */
+  opacity: 1;
 }
 
 .toggle-password:focus {
-  outline: 2px solid #00ffcc; /* Accessibility focus outline */
+  outline: 2px solid #00ffcc;
   outline-offset: 2px;
   border-radius: 3px;
   color: #00ffcc;
@@ -190,12 +190,12 @@ body {
 }
 
 .toggle-password.active {
-  color: #00ffcc; /* Active state color */
+  color: #00ffcc;
   opacity: 1;
 }
 
 .toggle-password.active::before {
-  content: "\f06e"; /* fa-eye (password visible) */
+  content: "\f06e";
 }
 
 /* Auth Button with Loading State */
@@ -219,11 +219,11 @@ body {
 
 /* Loading/Disabled State for Auth Button */
 .auth-btn:disabled {
-  background: linear-gradient(45deg, #cccccc, #aaaaaa); /* Grayed-out gradient */
-  color: #666666; /* Darker text for contrast */
+  background: linear-gradient(45deg, #cccccc, #aaaaaa);
+  color: #666666;
   cursor: not-allowed;
-  box-shadow: none; /* Remove shadow to indicate disabled state */
-  opacity: 0.7; /* Slightly faded */
+  box-shadow: none;
+  opacity: 0.7;
 }
 
 .toggle-text {
@@ -595,12 +595,12 @@ body {
 }
 
 .full-page-card {
-  height: calc(100vh - 40px); /* Full viewport height minus padding */
+  height: calc(100vh - 40px);
   display: flex;
   flex-direction: column;
-  justify-content: flex-start; /* Align content to the top */
-  padding-bottom: 40px; /* Reduced to ensure all content fits */
-  overflow: hidden; /* Prevent scrollbar */
+  justify-content: flex-start;
+  padding-bottom: 40px;
+  overflow: hidden;
 }
 
 .card:hover {
@@ -614,7 +614,7 @@ body {
   background-clip: text;
   -webkit-text-fill-color: transparent;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-  margin-bottom: 40px; /* Keep the gap between heading and form */
+  margin-bottom: 40px;
   font-size: 1.5em;
   text-align: left;
 }
@@ -655,49 +655,49 @@ body {
 .asset-form {
   display: flex;
   flex-direction: column;
-  gap: 3px; /* Reduced gap to fit all fields */
+  gap: 3px;
   width: 100%;
   max-width: none;
   margin: 0;
-  flex: 0 1 auto; /* Allow the form to shrink if needed */
+  flex: 0 1 auto;
 }
 
 .form-grid-enhanced {
   display: grid;
-  grid-template-columns: repeat(4, 1fr); /* Fixed 4 columns */
-  gap: 3px; /* Reduced gap to fit all fields */
+  grid-template-columns: repeat(4, 1fr);
+  gap: 3px;
   padding: 0;
-  align-items: stretch; /* Ensure fields stretch vertically */
+  align-items: stretch;
 }
 
 /* Style the last row to accommodate the button */
 .form-grid-enhanced .form-group:nth-child(25) {
-  grid-column: 1 / 2; /* Invoice Number in the first column */
+  grid-column: 1 / 2;
 }
 
 .form-grid-enhanced .button-container {
-  grid-column: 2 / 5; /* Button spans the last three columns */
-  grid-row: 7; /* Place in the last row (7th row for 25 fields) */
+  grid-column: 2 / 5;
+  grid-row: 7;
   display: flex;
   justify-content: flex-end;
-  padding: 5px; /* Match the padding of .form-group */
+  padding: 5px;
   margin: 0;
-  width: 100%; /* Ensure it takes the full width of the grid columns */
-  min-height: 66px; /* Match the height of the form-group */
-  align-items: flex-start; /* Align to the top to control positioning with margin */
+  width: 100%;
+  min-height: 66px;
+  align-items: flex-start;
 }
 
 .form-group {
   position: relative;
-  padding: 5px; /* Keep the reduced padding */
+  padding: 5px;
   border-radius: 5px;
   transition: all 0.3s ease;
   background: transparent;
   border: none;
   display: flex;
-  flex-direction: column; /* Ensure vertical stacking */
-  align-items: stretch; /* Ensure input stretches to fit */
-  height: 100%; /* Ensure the form group takes full height */
+  flex-direction: column;
+  align-items: stretch;
+  height: 100%;
 }
 
 .form-group-alt {
@@ -710,15 +710,15 @@ body {
 }
 
 .form-group label {
-  order: 1; /* Ensure label comes first in the flex order */
+  order: 1;
   color: rgba(255, 255, 255, 0.9);
-  font-size: 0.9em; /* Match the font size in the image */
-  font-weight: normal; /* Keep non-bold to match the image */
-  margin-bottom: 5px; /* Space between label and input */
+  font-size: 0.9em;
+  font-weight: normal;
+  margin-bottom: 5px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  text-align: left; /* Align text to the left as in the image */
+  text-align: left;
 }
 
 .form-group label::after {
@@ -733,7 +733,6 @@ body {
   margin-left: 2px;
 }
 
-/* Adjust the label and input order if necessary (since label comes before input in your HTML) */
 .form-group label:has(+ input:required)::after {
   content: "*";
   color: #ff4d4d;
@@ -742,27 +741,27 @@ body {
 
 .form-group input,
 .form-group select {
-  order: 2; /* Ensure input comes after the label in the flex order */
+  order: 2;
   width: 100%;
-  padding: 6px 8px; /* Keep the increased padding */
+  padding: 6px 8px;
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: 5px;
   outline: none;
   color: #fff;
-  font-size: 0.9em; /* Keep the increased font size */
+  font-size: 0.9em;
   transition: all 0.3s ease;
   box-sizing: border-box;
-  height: 36px; /* Keep the increased height */
+  height: 36px;
 }
 
 /* Specific styling for readonly inputs (e.g., Sr No field) */
 .form-group input[readonly] {
   background: rgba(255, 255, 255, 0.1);
   color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.5); /* Slightly more opaque border for distinction */
-  cursor: not-allowed; /* Visual cue that the field is uneditable */
-  opacity: 0.9; /* Slightly reduced opacity to indicate it's disabled */
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  cursor: not-allowed;
+  opacity: 0.9;
 }
 
 .form-group input[readonly]:focus {
@@ -781,23 +780,22 @@ body {
   background-position: right 8px center;
   background-size: 10px;
   height: 36px;
-  color: #fff; /* Text color for the selected option */
+  color: #fff;
   font-size: 0.9em;
 }
 
 .form-group select option {
-  background: rgba(26, 26, 46, 0.9); /* Dark background for the dropdown menu */
-  color: #fff; /* White text for the options */
+  background: rgba(26, 26, 46, 0.9);
+  color: #fff;
   font-size: 0.9em;
   padding: 6px 8px;
 }
 
 .form-group select option:hover {
-  background: rgba(0, 255, 204, 0.2); /* Light cyan background on hover */
+  background: rgba(0, 255, 204, 0.2);
   color: #fff;
 }
 
-.form-group input:focus,
 .form-group select:focus {
   border: 1px solid #00ffcc;
   box-shadow: 0 0 5px rgba(0, 255, 204, 0.3);
@@ -858,7 +856,7 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-top: 19px; /* Match the space above the input (label height + margin-bottom) */
+  margin-top: 19px;
 }
 
 .form-grid-enhanced .button-container .glow-btn:hover {
@@ -1024,11 +1022,11 @@ input[type="checkbox"]:hover {
 }
 
 .asset-table th .sort-icon.asc::before {
-  content: "\f0de"; /* Font Awesome up arrow */
+  content: "\f0de";
 }
 
 .asset-table th .sort-icon.desc::before {
-  content: "\f0dd"; /* Font Awesome down arrow */
+  content: "\f0dd";
 }
 
 .asset-table td {
@@ -1116,21 +1114,13 @@ input[type="checkbox"]:hover {
 }
 
 .action-btn.edit {
-  background: linear-gradient(
-    45deg,
-    #00ddeb,
-    #1e90ff
-  ); /* Changed to blue gradient */
-  color: #fff; /* Changed text color to white for better contrast */
+  background: linear-gradient(45deg, #00ddeb, #1e90ff);
+  color: #fff;
 }
 
 .action-btn.edit:hover {
-  background: linear-gradient(
-    45deg,
-    #1e90ff,
-    #00ddeb
-  ); /* Reversed gradient for hover effect */
-  box-shadow: 0 0 15px rgba(0, 141, 235, 0.5); /* Adjusted shadow to match blue color */
+  background: linear-gradient(45deg, #1e90ff, #00ddeb);
+  box-shadow: 0 0 15px rgba(0, 141, 235, 0.5);
 }
 
 .action-btn.save {
@@ -1141,6 +1131,17 @@ input[type="checkbox"]:hover {
 .action-btn.save:hover {
   background: linear-gradient(45deg, #00b7eb, #1e90ff);
   box-shadow: 0 0 15px rgba(30, 144, 255, 0.5);
+}
+
+/* New styles for the Generate Form button */
+.action-btn.generate-form {
+  background: linear-gradient(45deg, #28a745, #218838);
+  color: #fff;
+}
+
+.action-btn.generate-form:hover {
+  background: linear-gradient(45deg, #218838, #28a745);
+  box-shadow: 0 0 15px rgba(40, 167, 69, 0.5);
 }
 
 .action-btn:hover {
@@ -1190,7 +1191,7 @@ input[type="checkbox"]:hover {
   align-items: center;
   margin-bottom: 20px;
   gap: 10px;
-  flex-wrap: wrap; /* Allow wrapping on smaller screens */
+  flex-wrap: wrap;
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
@@ -1198,27 +1199,27 @@ input[type="checkbox"]:hover {
 
 /* Ensure the table type dropdown is always visible */
 .filter-search-container .filter-group:first-child {
-  display: flex !important; /* Override any hidden styles */
+  display: flex !important;
 }
 
 .search-bar {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 8px; /* Reduced gap to bring Reset button closer */
-  flex: 1 1 200px; /* Maintain the increased width */
+  gap: 8px;
+  flex: 1 1 200px;
   min-width: 200px;
   max-width: 300px;
 }
 
 .search-input-wrapper {
-  position: relative; /* Allows positioning the icon inside the input */
-  width: 100%; /* Ensure the wrapper takes the full width */
+  position: relative;
+  width: 100%;
 }
 
 .search-bar input {
   width: 100%;
-  padding: 10px 10px 10px 35px; /* Add padding-left for the icon */
+  padding: 10px 10px 10px 35px;
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: 5px;
@@ -1241,19 +1242,19 @@ input[type="checkbox"]:hover {
   position: absolute;
   left: 10px;
   top: 50%;
-  transform: translateY(-50%); /* Center vertically */
+  transform: translateY(-50%);
   color: rgba(255, 255, 255, 0.5);
   font-size: 0.9em;
 }
 
 .search-icon i {
-  margin-right: 0; /* Remove margin since it’s inside the input */
+  margin-right: 0;
 }
 
 .reset-btn {
-  background: #ff3333; /* Red background to match screenshot */
-  border: 1px solid #ff3333; /* Red border */
-  color: white; /* White text */
+  background: #ff3333;
+  border: 1px solid #ff3333;
+  color: white;
   padding: 8px 12px;
   border-radius: 5px;
   cursor: pointer;
@@ -1262,14 +1263,14 @@ input[type="checkbox"]:hover {
 }
 
 .reset-btn:hover {
-  background: #e60000; /* Darker red on hover */
+  background: #e60000;
   border-color: #e60000;
 }
 
 .filter-group {
   display: flex;
-  gap: 10px; /* Reduced gap to save space */
-  flex: 0 0 auto; /* Prevent shrinking */
+  gap: 10px;
+  flex: 0 0 auto;
   align-items: center;
 }
 
@@ -1280,11 +1281,11 @@ input[type="checkbox"]:hover {
   padding: 10px;
   color: #fff;
   font-size: 0.9em;
-  width: 170px; /* Increased from 120px to 150px to make dropdowns longer */
-  min-width: 170px; /* Increased from 120px to 150px */
-  max-width: 170px; /* Increased from 120px to 150px */
-  flex: 0 0 150px; /* Increased from 120px to 150px */
-  box-sizing: border-box; /* Ensure padding is included in width */
+  width: 170px;
+  min-width: 170px;
+  max-width: 170px;
+  flex: 0 0 150px;
+  box-sizing: border-box;
   appearance: none;
   background-image: url('data:image/svg+xml;utf8,<svg fill="rgba(255,255,255,0.8)" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>');
   background-repeat: no-repeat;
@@ -1300,8 +1301,8 @@ input[type="checkbox"]:hover {
 }
 
 .filter-group select option {
-  background: #333333; /* Dark gray background for options */
-  color: #fff; /* White text for contrast */
+  background: #333333;
+  color: #fff;
 }
 
 /* Responsive Adjustments */
@@ -1331,38 +1332,37 @@ input[type="checkbox"]:hover {
   }
 
   .filter-search-container {
-    flex-direction: column !important; /* Stack elements vertically on smaller screens */
+    flex-direction: column !important;
     align-items: flex-start;
-    flex-wrap: wrap !important; /* Allow wrapping for smaller screens */
+    flex-wrap: wrap !important;
   }
 
   .search-bar {
     max-width: 100%;
     width: 100%;
-    flex: 1 1 100%; /* Take full width on smaller screens */
-    justify-content: space-between; /* Ensure Reset button aligns properly */
+    flex: 1 1 100%;
+    justify-content: space-between;
   }
 
   .search-input-wrapper {
-    flex-grow: 1; /* Allow input to take available space */
+    flex-grow: 1;
   }
 
   .filter-group {
     width: 100%;
     justify-content: space-between;
-    flex-wrap: wrap; /* Allow dropdowns to wrap if needed */
+    flex-wrap: wrap;
   }
 
   .filter-group select {
-    width: 48%; /* Adjust width for smaller screens */
-    min-width: 150px; /* Increased from 120px to 150px to match the new size */
+    width: 48%;
+    min-width: 150px;
     max-width: 200px;
   }
 
-  /* Responsive Adjustments for Eye Icon */
   .toggle-password {
-    font-size: 1em; /* Slightly smaller for better fit */
-    right: 5px; /* Adjust position for smaller screens */
+    font-size: 1em;
+    right: 5px;
   }
 }
 
@@ -1421,20 +1421,19 @@ input[type="checkbox"]:hover {
   }
 
   .form-grid-enhanced .button-container .glow-btn {
-    margin-left: 0; /* Remove margin for mobile */
-    margin-top: 0; /* Reset margin-top for mobile */
+    margin-left: 0;
+    margin-top: 0;
   }
 
   .filter-group select {
-    width: 100%; /* Full width on very small screens */
+    width: 100%;
     max-width: 100%;
   }
 
-  /* Responsive Adjustments for Eye Icon */
   .toggle-password {
-    font-size: 0.9em; /* Even smaller for very small screens */
-    right: 3px; /* Adjust position */
-    padding: 3px; /* Smaller click area */
+    font-size: 0.9em;
+    right: 3px;
+    padding: 3px;
   }
 }
 
@@ -1501,7 +1500,7 @@ input[type="checkbox"]:hover {
   padding: 20px;
   position: relative;
   box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
-  overflow: hidden; /* Prevent content from escaping the modal */
+  overflow: hidden;
 }
 
 .close-btn {
@@ -1530,34 +1529,34 @@ input[type="checkbox"]:hover {
   color: rgba(255, 255, 255, 0.9);
   font-size: 1em;
   line-height: 1.6;
-  max-width: 100%; /* Ensure body doesn't exceed modal width */
-  overflow-wrap: break-word; /* Ensure wrapping at the body level */
+  max-width: 100%;
+  overflow-wrap: break-word;
   width: 100%;
   box-sizing: border-box;
 }
 
 .modal-body p {
   margin: 10px 0;
-  overflow-wrap: break-word; /* Break long words */
-  word-break: break-all; /* Fallback for very long strings without spaces */
-  white-space: normal; /* Allow wrapping */
-  max-width: 100%; /* Prevent paragraph from exceeding modal */
+  overflow-wrap: break-word;
+  word-break: break-all;
+  white-space: normal;
+  max-width: 100%;
 }
 
 .modal-body p strong {
   color: #00ffcc;
   margin-right: 5px;
-  display: inline; /* Changed to inline to allow wrapping */
-  min-width: 150px; /* Keep alignment */
-  white-space: nowrap; /* Keep label on one line */
+  display: inline;
+  min-width: 150px;
+  white-space: nowrap;
 }
 
 /* Styles for the Changes Table in the Card */
 .changes-table-wrapper {
-  max-height: 200px; /* Limit table height within card */
-  overflow-y: auto; /* Allow vertical scrolling */
-  overflow-x: auto; /* Allow horizontal scrolling on small screens */
-  width: 100%; /* Take full width of the card */
+  max-height: 200px;
+  overflow-y: auto;
+  overflow-x: auto;
+  width: 100%;
   margin-top: 10px;
   border-radius: 10px;
 }
@@ -1582,15 +1581,15 @@ input[type="checkbox"]:hover {
 }
 
 .changes-table {
-  width: 100%; /* Ensure table takes full width of the wrapper */
+  width: 100%;
   border-collapse: separate;
   border-spacing: 0;
   background: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(1px);
   border-radius: 10px;
-  margin-right: 0; /* Remove any right margin to avoid extra space */
-  table-layout: fixed; /* Evenly distribute column widths */
-  padding-right: 0; /* Remove any padding that might cause extra space */
+  margin-right: 0;
+  table-layout: fixed;
+  padding-right: 0;
 }
 
 .changes-table thead {
@@ -1602,16 +1601,16 @@ input[type="checkbox"]:hover {
 
 .changes-table th,
 .changes-table td {
-  padding: 8px 12px; /* Slightly increased padding for better readability */
+  padding: 8px 12px;
   text-align: left;
   color: rgba(255, 255, 255, 0.9);
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  overflow-wrap: break-word; /* Allow wrapping at normal word boundaries */
-  word-break: normal; /* Prevent breaking within words */
-  white-space: normal; /* Allow wrapping at spaces */
-  width: 20%; /* Distribute columns evenly (5 columns: Timestamp, Field, Old Value, New Value, Changed By) */
-  max-width: 100%; /* Prevent content from exceeding cell width */
-  box-sizing: border-box; /* Include padding in width calculations */
+  overflow-wrap: break-word;
+  word-break: normal;
+  white-space: normal;
+  width: 20%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .changes-table th {
@@ -1619,7 +1618,7 @@ input[type="checkbox"]:hover {
   color: #00ffcc;
   font-weight: bold;
   text-transform: uppercase;
-  font-size: 0.85em; /* Slightly smaller font for compact fit */
+  font-size: 0.85em;
   backdrop-filter: blur(10px);
 }
 
@@ -1634,9 +1633,9 @@ input[type="checkbox"]:hover {
 /* Modal Actions */
 .modal-actions {
   display: flex;
-  justify-content: flex-end; /* Align buttons to the right */
+  justify-content: flex-end;
   gap: 10px;
-  margin-bottom: 15px; /* Space between buttons and content below */
+  margin-bottom: 15px;
 }
 
 /* Editable Fields */
@@ -1647,7 +1646,7 @@ input[type="checkbox"]:hover {
 /* Edit Input Fields */
 .edit-input {
   width: 100%;
-  max-width: 300px; /* Limit input width for better appearance */
+  max-width: 300px;
   padding: 6px 8px;
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.3);
@@ -1711,7 +1710,7 @@ body {
   color: #ffffff;
   padding: 10px;
   border-radius: 5px;
-  margin-bottom: 15px; /* Increased for better spacing in login form */
+  margin-bottom: 15px;
   text-align: center;
   font-size: 0.9em;
   display: none;
@@ -1765,13 +1764,9 @@ body {
 }
 
 .form-grid-enhanced .button-container .glow-btn:hover {
-  background: linear-gradient(
-    45deg,
-    #00ddeb,
-    #00ffcc
-  ); /* Reverse gradient on hover */
-  box-shadow: 0 0 15px rgba(0, 255, 204, 0.5); /* Match auth-btn hover effect */
-  transform: translateY(-2px); /* Slight lift effect on hover */
+  background: linear-gradient(45deg, #00ddeb, #00ffcc);
+  box-shadow: 0 0 15px rgba(0, 255, 204, 0.5);
+  transform: translateY(-2px);
 }
 
 /* Style the scrollbar for full-page-card to match table-wrapper */
@@ -1796,11 +1791,10 @@ body {
 
 /* Add this to your styles.css */
 #formButtonContainer {
-  grid-column: 1 / -1; /* Span all columns */
+  grid-column: 1 / -1;
   display: flex;
   justify-content: center;
   margin-top: 20px;
-  /* padding: 5px 0; */
   text-align: center;
 }
 
@@ -1833,41 +1827,33 @@ body {
 /* New rules to remove the black line on hover for edit and save buttons */
 #assetDetailModal #editAssetBtn:hover,
 #assetDetailModal #saveAssetBtn:hover {
-  border: none !important; /* Remove all borders */
-  box-shadow: none !important; /* Remove shadow causing the line */
-  background: linear-gradient(
-    45deg,
-    #1e90ff,
-    #00ddeb
-  ) !important; /* Match edit hover */
-  transform: translateY(0) !important; /* Reset transform */
-  outline: none !important; /* Remove browser outline */
+  border: none !important;
+  box-shadow: none !important;
+  background: linear-gradient(45deg, #1e90ff, #00ddeb) !important;
+  transform: translateY(0) !important;
+  outline: none !important;
 }
 
 #assetDetailModal #saveAssetBtn:hover {
-  background: linear-gradient(
-    45deg,
-    #00b7eb,
-    #1e90ff
-  ) !important; /* Match save hover */
+  background: linear-gradient(45deg, #00b7eb, #1e90ff) !important;
 }
 
 #assetDetailModal #editAssetBtn::before,
 #assetDetailModal #editAssetBtn::after,
 #assetDetailModal #saveAssetBtn::before,
 #assetDetailModal #saveAssetBtn::after {
-  content: none !important; /* Disable pseudo-elements */
+  content: none !important;
 }
 
 /* Styles for Asset History Log */
 .history-grid-wrapper {
   width: 100%;
   flex: 1;
-  overflow-x: hidden; /* Remove horizontal scrolling */
-  overflow-y: auto; /* Allow vertical scrolling */
+  overflow-x: hidden;
+  overflow-y: auto;
   position: relative;
   max-height: calc(100vh - 160px);
-  padding: 10px 5px; /* Further reduced right padding to minimize excess space */
+  padding: 10px 5px;
 }
 
 .history-grid-wrapper::-webkit-scrollbar {
@@ -1891,10 +1877,10 @@ body {
 
 .history-asset-grid {
   display: flex;
-  flex-direction: column; /* Stack cards vertically */
-  gap: 15px; /* Space between cards */
-  padding: 0; /* Remove padding from the grid itself */
-  align-items: stretch; /* Ensure cards stretch to full width */
+  flex-direction: column;
+  gap: 15px;
+  padding: 0;
+  align-items: stretch;
 }
 
 .history-asset-card {
@@ -1902,23 +1888,23 @@ body {
   backdrop-filter: blur(2px);
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 10px;
-  padding: 15px 15px 15px 15px; /* Uniform padding in collapsed state */
+  padding: 15px 15px 15px 15px;
   cursor: pointer;
-  transition: height 0.3s ease; /* Smooth transition for height changes */
+  transition: height 0.3s ease;
   overflow: hidden;
-  width: 100%; /* Full width of the container */
+  width: 100%;
   box-sizing: border-box;
-  height: auto; /* Allow natural height in collapsed state */
-  max-height: 180px; /* Collapsed state height */
-  margin-bottom: 10px; /* Add margin between cards for list-like separation */
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2); /* Subtle shadow for list-like distinction */
+  height: auto;
+  max-height: 180px;
+  margin-bottom: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .history-asset-card.expanded {
-  max-height: none; /* Remove max-height constraint to fit content */
-  height: auto; /* Let the height be determined by content */
-  overflow-y: auto; /* Allow scrolling if content exceeds reasonable height */
-  padding-right: 5px; /* Further reduced to minimize right space, accounting for 8px scrollbar */
+  max-height: none;
+  height: auto;
+  overflow-y: auto;
+  padding-right: 5px;
 }
 
 .history-asset-card:hover {
@@ -1946,85 +1932,85 @@ body {
 }
 
 .card-content {
-  width: 100%; /* Ensure content takes full width */
+  width: 100%;
   overflow: hidden;
-  word-wrap: break-word; /* Ensure content wraps */
+  word-wrap: break-word;
 }
 
 .history-details {
-  display: none; /* Hidden by default */
+  display: none;
   margin-top: 10px;
-  margin-right: 0; /* Remove any right margin to avoid extra space */
+  margin-right: 0;
   padding-top: 10px;
-  padding-right: 10px; /* Remove right padding to align with card edge */
+  padding-right: 10px;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
-  opacity: 0; /* Start hidden for animation */
-  transition: opacity 0.3s ease; /* Fade-in animation */
-  width: 100%; /* Ensure details section takes full width */
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  width: 100%;
 }
 
 .history-asset-card.expanded .history-details {
-  display: block; /* Show when card is expanded */
-  opacity: 1; /* Fade in */
+  display: block;
+  opacity: 1;
 }
 
 .history-asset-card p {
   margin: 4px 0;
-  margin-right: 0; /* Remove any right margin to avoid extra space */
-  padding-right: 0; /* Remove any right padding */
+  margin-right: 0;
+  padding-right: 0;
   color: rgba(255, 255, 255, 0.9);
   font-size: 0.85em;
   overflow-wrap: break-word;
   white-space: normal;
   line-height: 1.4;
-  word-break: break-all; /* Break long strings without spaces */
-  width: 100%; /* Ensure paragraph takes full width */
+  word-break: break-all;
+  width: 100%;
 }
 
 .history-asset-card p strong {
   color: #00ffcc;
   margin-right: 5px;
-  display: inline; /* Changed to inline to allow text to wrap naturally */
-  white-space: nowrap; /* Keep label on one line */
+  display: inline;
+  white-space: nowrap;
 }
 
 /* Responsive Adjustments for Card List */
 @media (max-width: 900px) {
   .history-grid-wrapper {
-    padding: 10px 3px; /* Further reduced right padding for medium screens */
+    padding: 10px 3px;
   }
 
   .history-asset-card {
-    padding: 12px 12px 12px 12px; /* Adjusted padding */
+    padding: 12px 12px 12px 12px;
   }
 
   .history-asset-card.expanded {
-    padding-right: 3px; /* Further reduce right padding to account for scrollbar */
+    padding-right: 3px;
   }
 
   .changes-table th,
   .changes-table td {
-    padding: 8px 10px; /* Adjusted padding for medium screens */
-    width: 20%; /* Maintain even distribution */
-    font-size: 0.8em; /* Slightly smaller font to fit better */
+    padding: 8px 10px;
+    width: 20%;
+    font-size: 0.8em;
   }
 
   .changes-table-wrapper {
-    overflow-x: auto; /* Allow horizontal scrolling on smaller screens */
+    overflow-x: auto;
   }
 }
 
 @media (max-width: 600px) {
   .history-grid-wrapper {
-    padding: 10px 2px; /* Further reduced right padding for small screens */
+    padding: 10px 2px;
   }
 
   .history-asset-card {
-    padding: 10px 10px 10px 10px; /* Adjusted padding */
+    padding: 10px 10px 10px 10px;
   }
 
   .history-asset-card.expanded {
-    padding-right: 2px; /* Minimal right padding to account for scrollbar */
+    padding-right: 2px;
   }
 
   .history-asset-card p {
@@ -2033,12 +2019,285 @@ body {
 
   .changes-table th,
   .changes-table td {
-    padding: 6px 8px; /* Further reduce padding on small screens */
-    font-size: 0.75em; /* Even smaller font to fit better */
-    width: 20%; /* Maintain even distribution */
+    padding: 6px 8px;
+    font-size: 0.75em;
+    width: 20%;
   }
 
   .changes-table-wrapper {
-    overflow-x: auto; /* Allow horizontal scrolling on very small screens */
+    overflow-x: auto;
+  }
+}
+
+.system-allocation .main-container {
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 0;
+  padding: 20px;
+  box-shadow: none;
+  max-width: 100%;
+  margin: 0;
+  height: auto;
+}
+
+.forms-container {
+  margin-bottom: 20px;
+}
+
+.form-container {
+  display: none;
+  padding: 20px;
+  border: none;
+  border-radius: 0;
+  background: #fff;
+  margin-bottom: 20px;
+}
+
+.form-container.active {
+  display: block;
+}
+
+.form-container h2 {
+  text-align: center;
+  margin-bottom: 20px;
+  color: #333;
+  font-size: 1.8em;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #ddd;
+}
+
+.issuing-table, 
+.checklist-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 20px;
+  border: 1px solid #ddd;
+}
+
+.issuing-table td, 
+.checklist-table td, 
+.checklist-table th {
+  padding: 10px;
+  border: 1px solid #ddd;
+  vertical-align: top;
+}
+
+.issuing-table td:first-child, 
+.checklist-table th {
+  font-weight: bold;
+  background: #f5f5f5;
+  width: 30%;
+}
+
+.issuing-table input,
+.issuing-table textarea,
+.issuing-table select,
+.checklist-table input,
+.checklist-table select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+.issuing-table textarea {
+  height: 60px;
+  resize: vertical;
+}
+
+.issuing-table .issued-by {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.signature-box-content {
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  height: 60px;
+  background: #f9f9f9;
+}
+
+.checklist-table .status-dropdown {
+  width: 100px;
+}
+
+.checklist-table input[type="text"] {
+  width: 100%;
+}
+
+#nextBtn,
+#submitBtn {
+  display: block;
+  margin: 20px auto;
+  padding: 10px 20px;
+  background: #28a745;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+#nextBtn:hover,
+#submitBtn:hover {
+  background: #218838;
+}
+
+/* Responsive adjustments for css file 2 */
+@media (max-width: 768px) {
+  .system-allocation .main-container {
+    padding: 10px;
+    height: auto;
+  }
+
+  .issuing-table td,
+  .checklist-table td,
+  .checklist-table th {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .issuing-table td:first-child,
+  .checklist-table th {
+    width: 100%;
+  }
+
+  .header {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .company-info {
+    margin-bottom: 10px;
+  }
+
+  .doc-info {
+    text-align: center;
+  }
+}
+
+@media (max-width: 600px) {
+  #nextBtn,
+  #submitBtn {
+    width: 100%;
+    padding: 12px;
+  }
+}
+
+/* Wrapper for form section */
+.content-wrapper {
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+  width: 100%;
+  height: calc(100vh - 40px);
+}
+
+/* Form section styling */
+.form-section {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+/* Update the .header styles to align logo, company details, and version info */
+.header {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #e0e0e0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.header .company-info {
+  grid-column: 1;
+  display: flex;
+  align-items: center;
+  justify-self: start;
+}
+
+.header .company-logo {
+  width: 100px;
+  height: auto;
+  margin-right: 0;
+}
+
+.header .company-details {
+  grid-column: 2;
+  text-align: center;
+  justify-self: center;
+}
+
+.header .company-details h1 {
+  font-size: 1.5em;
+  margin: 0;
+  color: #333;
+}
+
+.header .company-details p {
+  margin: 5px 0 0;
+  color: #666;
+  font-size: 0.9em;
+  text-align: center;
+}
+
+.header .doc-info {
+  grid-column: 3;
+  text-align: right;
+  justify-self: end;
+}
+
+.header .doc-info p {
+  margin: 5px 0;
+  color: #666;
+  font-size: 0.9em;
+}
+
+/* Style the form heading below the header */
+.form-container h2 {
+  text-align: center;
+  margin-bottom: 20px;
+  color: #333;
+  font-size: 1.8em;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #ddd;
+}
+
+/* Responsive adjustments for the new layout */
+@media (max-width: 768px) {
+  .content-wrapper {
+    flex-direction: column;
+    height: auto;
+  }
+
+  .form-section {
+    flex: 1 0 100%;
+    max-width: 100%;
+    margin-bottom: 20px;
+  }
+
+  .header {
+    display: flex;
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .header .company-info {
+    justify-self: center;
+    margin-bottom: 10px;
+  }
+
+  .header .company-details {
+    margin: 10px 0;
+  }
+
+  .header .doc-info {
+    justify-self: center;
+    text-align: center;
   }
 }

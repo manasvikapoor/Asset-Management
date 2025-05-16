@@ -1,4 +1,4 @@
-const BACKEND_URL = 'http://localhost:3000'; // Update if your server runs on a different port
+const BACKEND_URL = "http://localhost:3000"; // Update if your server runs on a different port
 
 console.log("script.js loaded successfully");
 
@@ -10,7 +10,8 @@ function setCookie(name, value, days) {
     date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000);
     expires = "; expires=" + date.toUTCString();
   }
-  document.cookie = name + "=" + (value || "") + expires + "; path=/; SameSite=Strict";
+  document.cookie =
+    name + "=" + (value || "") + expires + "; path=/; SameSite=Strict";
 }
 
 function getCookie(name) {
@@ -30,7 +31,8 @@ function deleteCookie(name) {
 
 // Function to display error messages in the UI
 function showError(formFace, message) {
-  const errorElement = formFace.querySelector(".error-message") || document.createElement("div");
+  const errorElement =
+    formFace.querySelector(".error-message") || document.createElement("div");
   errorElement.className = "error-message";
   errorElement.id = formFace.querySelector("form").ariaDescribedBy;
   errorElement.textContent = message;
@@ -44,35 +46,35 @@ let allAssets = []; // Store all fetched data
 let sortColumn = null; // Default to null to disable initial sorting
 let sortDirection = "asc"; // Default sort direction
 let currentTableType = ""; // Store the selected table type
-const cube = document.getElementById('cube');
-const video = document.getElementById('background-video');
+const cube = document.getElementById("cube");
+const video = document.getElementById("background-video");
 
 // Cube rotation functions
 function rotateToLogin() {
-  cube.style.transform = 'translateZ(-200px) rotateY(0deg)';
+  cube.style.transform = "translateZ(-200px) rotateY(0deg)";
 }
 
 function rotateToRegister() {
-  cube.style.transform = 'translateZ(-200px) rotateY(-120deg)';
+  cube.style.transform = "translateZ(-200px) rotateY(-120deg)";
 }
 
 function rotateToReset() {
-  cube.style.transform = 'translateZ(-200px) rotateY(-240deg)';
+  cube.style.transform = "translateZ(-200px) rotateY(-240deg)";
 }
 
 // Password show/hide toggle
-document.querySelectorAll('.toggle-password').forEach(toggle => {
-  toggle.addEventListener('click', () => {
-      const targetId = toggle.getAttribute('data-target');
-      const passwordInput = document.getElementById(targetId);
-      
-      if (passwordInput.type === 'password') {
-          passwordInput.type = 'text';
-          toggle.classList.add('active');
-      } else {
-          passwordInput.type = 'password';
-          toggle.classList.remove('active');
-      }
+document.querySelectorAll(".toggle-password").forEach((toggle) => {
+  toggle.addEventListener("click", () => {
+    const targetId = toggle.getAttribute("data-target");
+    const passwordInput = document.getElementById(targetId);
+
+    if (passwordInput.type === "password") {
+      passwordInput.type = "text";
+      toggle.classList.add("active");
+    } else {
+      passwordInput.type = "password";
+      toggle.classList.remove("active");
+    }
   });
 
   // Add keyboard support for accessibility
@@ -85,9 +87,9 @@ document.querySelectorAll('.toggle-password').forEach(toggle => {
 });
 
 // Ensure the video plays on page load
-window.addEventListener('load', () => {
-  video.play().catch(error => {
-      console.log("Autoplay blocked by browser:", error);
+window.addEventListener("load", () => {
+  video.play().catch((error) => {
+    console.log("Autoplay blocked by browser:", error);
   });
 });
 
@@ -136,11 +138,14 @@ document
       button.disabled = false;
       button.textContent = "Sign In";
     }
-});
+  });
 
 // Check authentication on page load
 document.addEventListener("DOMContentLoaded", async () => {
-  if (window.location.pathname.includes("index.html") || window.location.pathname === "/") {
+  if (
+    window.location.pathname.includes("index.html") ||
+    window.location.pathname === "/"
+  ) {
     try {
       const response = await fetch(`${BACKEND_URL}/check-auth`, {
         credentials: "include", // Send cookies with request
@@ -188,7 +193,7 @@ const visibleColumnsMap = {
     "location",
     "machine_asset_tag",
     "monitor_asset_tag",
-    "status"
+    "status",
   ],
   servers: ["sr_no", "description", "location", "host_name", "asset_tag"],
   printers_and_scanners: [
@@ -230,12 +235,12 @@ const primaryKeyFieldsMap = {
   servers: ["sr_no", "asset_tag"],
   switch: ["sr_no", "asset_tag"],
   firewall: ["sr_no", "asset_tag"],
-  printers_and_scanners: ["sr_no", "asset_tag"]
+  printers_and_scanners: ["sr_no", "asset_tag"],
 };
 
 // Define non-required fields for each table type
 const nonRequiredFieldsMap = {
-  systems: ["remarks"],
+  systems: ["remarks", "date_of_issue"],
   servers: ["remarks"],
   switch: ["remarks"],
   firewall: ["remarks"],
@@ -272,8 +277,10 @@ function normalizeDateAsUTC(dateValue) {
   }
   const date = new Date(dateValue);
   if (isNaN(date.getTime())) return dateValue;
-  const pad = num => num.toString().padStart(2, '0');
-  return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}`;
+  const pad = (num) => num.toString().padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
+    date.getDate()
+  )}`;
 }
 
 // Helper function to format dates for display
@@ -331,26 +338,37 @@ function showSuccessMessage(message, container) {
 
 // Function to toggle the expanded state of a card
 function toggleCard(card) {
-  document.querySelectorAll('.history-asset-card').forEach(c => {
+  document.querySelectorAll(".history-asset-card").forEach((c) => {
     if (c !== card) {
-      c.classList.remove('expanded');
+      c.classList.remove("expanded");
     }
   });
-  card.classList.toggle('expanded');
+  card.classList.toggle("expanded");
 }
 
 // Function to show asset history in the Asset History Log tab
 async function showAssetHistory() {
   console.log("Entering showAssetHistory");
-  const historyTableTypeFilter = document.getElementById("historyTableTypeFilter");
+  const historyTableTypeFilter = document.getElementById(
+    "historyTableTypeFilter"
+  );
   const historySearchInput = document.getElementById("historySearchInput");
-  const historyResetSearchBtn = document.getElementById("historyResetSearchBtn");
-  const historyMessageContainer = document.getElementById("historyMessageContainer");
+  const historyResetSearchBtn = document.getElementById(
+    "historyResetSearchBtn"
+  );
+  const historyMessageContainer = document.getElementById(
+    "historyMessageContainer"
+  );
   const historyAssetGrid = document.getElementById("historyAssetGrid");
 
   console.log("Checking required DOM elements for Asset History page");
-  if (!historyTableTypeFilter || !historySearchInput || !historyResetSearchBtn || 
-      !historyMessageContainer || !historyAssetGrid) {
+  if (
+    !historyTableTypeFilter ||
+    !historySearchInput ||
+    !historyResetSearchBtn ||
+    !historyMessageContainer ||
+    !historyAssetGrid
+  ) {
     console.error("Required elements not found in asset-history.html");
     console.error({
       historyTableTypeFilter: !!historyTableTypeFilter,
@@ -369,7 +387,9 @@ async function showAssetHistory() {
   let assetChangeHistoryMap = new Map();
 
   async function fetchChangeHistory(asset, tableType) {
-    console.log(`Entering fetchChangeHistory for asset ${asset.sr_no}, tableType: ${tableType}`);
+    console.log(
+      `Entering fetchChangeHistory for asset ${asset.sr_no}, tableType: ${tableType}`
+    );
     const body = { tableType };
     if (tableType.toLowerCase() === "systems") {
       body.sr_no = asset.sr_no;
@@ -397,7 +417,10 @@ async function showAssetHistory() {
       const data = await response.json();
       return data.history || [];
     } catch (error) {
-      console.error(`Error fetching asset history for asset ${asset.sr_no}:`, error.message);
+      console.error(
+        `Error fetching asset history for asset ${asset.sr_no}:`,
+        error.message
+      );
       return [];
     }
   }
@@ -406,17 +429,21 @@ async function showAssetHistory() {
     console.log("Entering renderAssets");
     historyAssetGrid.innerHTML = "";
     if (assets.length === 0) {
-      historyAssetGrid.innerHTML = '<p class="empty-message">No assets with changes available.</p>';
+      historyAssetGrid.innerHTML =
+        '<p class="empty-message">No assets with changes available.</p>';
       return;
     }
 
     const tableType = historyTableTypeFilter.value;
     const allColumns = assets.length > 0 ? Object.keys(assets[0]) : [];
-    const visibleColumns = visibleColumnsMap[tableType.toLowerCase()] || allColumns;
+    const visibleColumns =
+      visibleColumnsMap[tableType.toLowerCase()] || allColumns;
     let hasRenderedCards = false;
 
     assets.forEach((asset) => {
-      const { history } = assetChangeHistoryMap.get(JSON.stringify(asset)) || { history: [] };
+      const { history } = assetChangeHistoryMap.get(JSON.stringify(asset)) || {
+        history: [],
+      };
       if (history.length === 0) return;
 
       const card = document.createElement("div");
@@ -425,7 +452,7 @@ async function showAssetHistory() {
       card.dataset.asset = JSON.stringify(asset);
 
       let cardContent = '<div class="card-content">';
-      visibleColumns.forEach(column => {
+      visibleColumns.forEach((column) => {
         if (allColumns.includes(column)) {
           const formattedColumn = formatColumnName(column);
           let value = asset[column] || "";
@@ -437,11 +464,11 @@ async function showAssetHistory() {
           `;
         }
       });
-      cardContent += '</div>';
+      cardContent += "</div>";
 
       let historyContent = '<div class="history-details">';
       if (history.length === 0) {
-        historyContent += '<p>No changes available for this asset.</p>';
+        historyContent += "<p>No changes available for this asset.</p>";
       } else {
         historyContent += `
           <table class="changes-table">
@@ -456,7 +483,7 @@ async function showAssetHistory() {
             </thead>
             <tbody>
         `;
-        history.forEach(entry => {
+        history.forEach((entry) => {
           const formattedDate = formatDateForDisplay(entry.change_date);
           historyContent += `
             <tr>
@@ -473,7 +500,7 @@ async function showAssetHistory() {
           </table>
         `;
       }
-      historyContent += '</div>';
+      historyContent += "</div>";
 
       card.innerHTML = cardContent + historyContent;
       historyAssetGrid.appendChild(card);
@@ -481,7 +508,8 @@ async function showAssetHistory() {
     });
 
     if (!hasRenderedCards) {
-      historyAssetGrid.innerHTML = '<p class="empty-message">No assets with changes available.</p>';
+      historyAssetGrid.innerHTML =
+        '<p class="empty-message">No assets with changes available.</p>';
     }
   }
 
@@ -492,7 +520,9 @@ async function showAssetHistory() {
     }
 
     try {
-      const response = await fetch(`${BACKEND_URL}/fetchData/${tableType}`, { credentials: "include" });
+      const response = await fetch(`${BACKEND_URL}/fetchData/${tableType}`, {
+        credentials: "include",
+      });
       if (!response.ok) throw new Error("Failed to fetch assets");
       const allFetchedAssets = await response.json();
 
@@ -510,8 +540,12 @@ async function showAssetHistory() {
       await renderAssets(filteredAssets);
     } catch (error) {
       console.error("Error fetching assets for history:", error.message);
-      showErrorMessage("Failed to load assets. Please try again.", historyMessageContainer);
-      historyAssetGrid.innerHTML = '<p class="empty-message">Error loading assets.</p>';
+      showErrorMessage(
+        "Failed to load assets. Please try again.",
+        historyMessageContainer
+      );
+      historyAssetGrid.innerHTML =
+        '<p class="empty-message">Error loading assets.</p>';
     }
   }
 
@@ -520,10 +554,12 @@ async function showAssetHistory() {
     const tableType = historyTableTypeFilter.value;
     const visibleColumns = visibleColumnsMap[tableType.toLowerCase()] || [];
 
-    filteredAssets = historyAssets.filter(asset => {
-      const { history } = assetChangeHistoryMap.get(JSON.stringify(asset)) || { history: [] };
+    filteredAssets = historyAssets.filter((asset) => {
+      const { history } = assetChangeHistoryMap.get(JSON.stringify(asset)) || {
+        history: [],
+      };
       if (history.length === 0) return false;
-      return visibleColumns.some(column => {
+      return visibleColumns.some((column) => {
         const fieldValue = (asset[column] || "").toString().toLowerCase();
         return fieldValue.includes(searchValue);
       });
@@ -552,6 +588,175 @@ async function showAssetHistory() {
     filteredAssets = [...historyAssets];
     renderAssets(filteredAssets);
   });
+}
+
+// System Allocation and Checklist Logic
+let records = [];
+let srNoCounter = 1;
+
+// Load records from localStorage on script initialization
+try {
+  const storedRecords = localStorage.getItem("systemAllocationRecords");
+  if (storedRecords) {
+    records = JSON.parse(storedRecords);
+    console.log("Loaded records from localStorage:", records);
+    // Update srNoCounter based on the highest srNo in records
+    const maxSrNo =
+      records.length > 0 ? Math.max(...records.map((r) => r.srNo)) : 0;
+    srNoCounter = maxSrNo + 1;
+  }
+} catch (error) {
+  console.error("Error loading records from localStorage:", error);
+}
+
+function syncChecklistFields() {
+  const username = document.getElementById("username")?.value;
+  const serialNo = document.getElementById("serialNo")?.value;
+  const assetTag = document.getElementById("assetTag")?.value;
+
+  const checklistUsername = document.getElementById("checklistUsername");
+  const checklistSerialNo = document.getElementById("checklistSerialNo");
+  const checklistAssetTag = document.getElementById("checklistAssetTag");
+
+  if (checklistUsername) checklistUsername.textContent = username || "";
+  if (checklistSerialNo) checklistSerialNo.textContent = serialNo || "";
+  if (checklistAssetTag) checklistAssetTag.textContent = assetTag || "";
+}
+
+function renderSystemAllocationDashboard() {
+  const tbody = document.getElementById("dashboardTableBody");
+  if (!tbody) {
+    console.error("Dashboard table body not found!");
+    return;
+  }
+  tbody.innerHTML = ""; // Clear existing rows
+  console.log("Rendering system allocation dashboard with records:", records);
+  records.forEach((record) => {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${record.srNo}</td>
+    <td>${record.username}</td>
+      <td>${record.deptName}</td>
+      <td>
+        <button class="action-btn edit-btn" onclick="editSystemAllocationRecord(${record.srNo})">Edit</button>
+        <button class="action-btn delete-btn" onclick="deleteSystemAllocationRecord(${record.srNo})">Delete</button>
+        <button class="action-btn print-btn" onclick="printSystemAllocationRecord(${record.srNo})">Print</button>
+      </td>
+    `;
+    tbody.appendChild(row);
+  });
+}
+
+function editSystemAllocationRecord(srNo) {
+  const record = records.find((r) => r.srNo === Number(srNo));
+  const issuingContainer = document.querySelector(".issuing-container");
+  const checklistContainer = document.querySelector(".checklist-container");
+  const nextBtn = document.getElementById("nextBtn");
+
+  if (record && issuingContainer && checklistContainer && nextBtn) {
+    // Populate issuing form
+    document.getElementById("username").value = record.username;
+    document.getElementById("deptName").value = record.deptName;
+    document.getElementById("dateOfIssue").value = record.dateOfIssue;
+    document.getElementById("laptop").value = record.laptop;
+    document.getElementById("serialNo").value = record.serialNo;
+    document.getElementById("configuration").value = record.configuration;
+    document.getElementById("accessories").value = record.accessories;
+    document.getElementById("assetTag").value = record.assetTag;
+    document.getElementById("issuedPerson").value = record.issuedPerson;
+
+    // Populate checklist form
+    document.getElementById("systemName").value = record.checklist.systemName;
+    for (let i = 1; i <= 32; i++) {
+      const statusElement = document.querySelector(`select[name="status${i}"]`);
+      if (statusElement) {
+        statusElement.value = record.checklist.statuses[`status${i}`] || "N/A";
+      }
+    }
+
+    // Sync checklist fields and show checklist
+    syncChecklistFields();
+    issuingContainer.classList.add("active");
+    checklistContainer.classList.add("active");
+    checklistContainer.style.display = "block";
+    nextBtn.style.display = "none";
+
+    // Remove old record from array
+    records = records.filter((r) => r.srNo !== Number(srNo));
+    // Update localStorage
+    try {
+      localStorage.setItem("systemAllocationRecords", JSON.stringify(records));
+      console.log("Updated records in localStorage after edit:", records);
+    } catch (error) {
+      console.error("Error saving records to localStorage after edit:", error);
+    }
+    renderSystemAllocationDashboard();
+  }
+}
+
+function deleteSystemAllocationRecord(srNo) {
+  records = records.filter((r) => r.srNo !== Number(srNo));
+  console.log("Record deleted:", srNo);
+  console.log("Updated records array:", records);
+  // Update localStorage
+  try {
+    localStorage.setItem("systemAllocationRecords", JSON.stringify(records));
+    console.log("Updated records in localStorage after delete:", records);
+  } catch (error) {
+    console.error("Error saving records to localStorage after delete:", error);
+  }
+  renderSystemAllocationDashboard();
+}
+
+function printSystemAllocationRecord(srNo) {
+  console.log(
+    "printSystemAllocationRecord called with srNo:",
+    srNo,
+    "type:",
+    typeof srNo
+  );
+
+  // Convert srNo to a number to ensure type consistency
+  const srNoNum = Number(srNo);
+  if (isNaN(srNoNum)) {
+    console.error("Invalid srNo value, cannot convert to number:", srNo);
+    return;
+  }
+
+  // Log the records array to debug
+  console.log("Current records array:", records);
+
+  // Find the record
+  const record = records.find((r) => {
+    console.log(
+      `Comparing r.srNo: ${
+        r.srNo
+      } (type: ${typeof r.srNo}) with srNoNum: ${srNoNum} (type: ${typeof srNoNum})`
+    );
+    return r.srNo === srNoNum;
+  });
+
+  if (!record) {
+    console.error(`No record found with srNo: ${srNoNum}`);
+    return;
+  }
+
+  // Store the srNo in localStorage for the target page to retrieve
+  try {
+    localStorage.setItem("printSystemAllocationSrNo", srNoNum.toString());
+    console.log(`Stored srNo ${srNoNum} in localStorage for printing`);
+  } catch (error) {
+    console.error("Error storing srNo in localStorage:", error);
+    return;
+  }
+
+  // Redirect to laptop-checklist.html
+  try {
+    console.log("Redirecting to laptop-checklist.html for printing");
+    window.location.href = "laptop-checklist.html";
+  } catch (error) {
+    console.error("Error during redirection:", error);
+  }
 }
 
 // Wait for DOM to be fully loaded
@@ -640,25 +845,42 @@ document.addEventListener("DOMContentLoaded", function () {
     async function fetchLastSrNo(tableType) {
       try {
         console.log(`Fetching last sr_no for ${tableType}`);
-        const response = await fetch(`${BACKEND_URL}/fetchData/${tableType}`, { credentials: "include" });
+        const response = await fetch(`${BACKEND_URL}/fetchData/${tableType}`, {
+          credentials: "include",
+        });
         if (!response.ok) {
           const errorText = await response.text();
-          throw new Error(`Failed to fetch data: ${response.status} - ${errorText}`);
+          throw new Error(
+            `Failed to fetch data: ${response.status} - ${errorText}`
+          );
         }
         const data = await response.json();
-        const maxSrNo = data.length > 0
-          ? Math.max(...data.map(item => parseInt(item.sr_no, 10)).filter(num => !isNaN(num)))
-          : 0;
+        const maxSrNo =
+          data.length > 0
+            ? Math.max(
+                ...data
+                  .map((item) => parseInt(item.sr_no, 10))
+                  .filter((num) => !isNaN(num))
+              )
+            : 0;
         return maxSrNo;
       } catch (error) {
-        console.error(`Error fetching last sr_no for ${tableType}:`, error.message);
-        showErrorMessage("Failed to fetch the last serial number. Please try again.", messageContainer);
+        console.error(
+          `Error fetching last sr_no for ${tableType}:`,
+          error.message
+        );
+        showErrorMessage(
+          "Failed to fetch the last serial number. Please try again.",
+          messageContainer
+        );
         return 0;
       }
     }
 
     async function fetchColumnsForTableType(tableType) {
-      const formButtonContainer = document.getElementById("formButtonContainer");
+      const formButtonContainer = document.getElementById(
+        "formButtonContainer"
+      );
       if (!tableType) {
         formContainer.innerHTML = "";
         formButtonContainer.style.display = "none";
@@ -666,10 +888,15 @@ document.addEventListener("DOMContentLoaded", function () {
       }
 
       try {
-        const response = await fetch(`${BACKEND_URL}/fetchColumns/${tableType}`, { credentials: "include" });
+        const response = await fetch(
+          `${BACKEND_URL}/fetchColumns/${tableType}`,
+          { credentials: "include" }
+        );
         if (!response.ok) {
           const errorText = await response.text();
-          throw new Error(`Failed to fetch columns: ${response.status} - ${errorText}`);
+          throw new Error(
+            `Failed to fetch columns: ${response.status} - ${errorText}`
+          );
         }
         const { columns } = await response.json();
         const excludedFields = [
@@ -733,8 +960,14 @@ document.addEventListener("DOMContentLoaded", function () {
           formContainer.appendChild(div);
         });
       } catch (error) {
-        console.error(`Error fetching columns for ${tableType}:`, error.message);
-        showErrorMessage("Failed to load form fields. Please try again.", messageContainer);
+        console.error(
+          `Error fetching columns for ${tableType}:`,
+          error.message
+        );
+        showErrorMessage(
+          "Failed to load form fields. Please try again.",
+          messageContainer
+        );
         formButtonContainer.style.display = "none";
       }
     }
@@ -767,7 +1000,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
         if (!response.ok) {
           const errorText = await response.text();
-          throw new Error(`Failed to add asset: ${response.status} - ${errorText}`);
+          throw new Error(
+            `Failed to add asset: ${response.status} - ${errorText}`
+          );
         }
 
         const result = await response.json();
@@ -778,14 +1013,139 @@ document.addEventListener("DOMContentLoaded", function () {
         await fetchColumnsForTableType("systems");
       } catch (error) {
         console.error("Error adding asset:", error.message);
-        showErrorMessage("Failed to add asset. Please try again.", messageContainer);
+        showErrorMessage(
+          "Failed to add asset. Please try again.",
+          messageContainer
+        );
       }
     });
   }
 
+  // System Allocation and Checklist Logic Initialization
+  const issuingContainer = document.querySelector(".issuing-container");
+  const checklistContainer = document.querySelector(".checklist-container");
+  const nextBtn = document.getElementById("nextBtn");
+  const submitBtn = document.getElementById("submitBtn");
+  const issuingForm = document.getElementById("issuingForm");
+  const checklistForm = document.getElementById("checklistForm");
+  const addRecordBtn = document.getElementById("addRecordBtn");
+
+  // Format and set current date for "Issued By / Date" field
+  const currentDate = new Date();
+  const day = currentDate.getDate();
+  const month = currentDate
+    .toLocaleString("default", { month: "short" })
+    .toUpperCase();
+  const year = currentDate.getFullYear();
+  const formattedDate = `${day}-${month}-${year}`;
+  const currentDateElement = document.getElementById("currentDate");
+  if (currentDateElement) {
+    currentDateElement.textContent = formattedDate;
+  }
+
+  if (
+    issuingForm &&
+    checklistForm &&
+    nextBtn &&
+    submitBtn &&
+    issuingContainer &&
+    checklistContainer
+  ) {
+    console.log("System allocation elements found, initializing");
+
+    nextBtn.addEventListener("click", function () {
+      if (issuingForm.checkValidity()) {
+        syncChecklistFields();
+        issuingContainer.classList.remove("active");
+        checklistContainer.classList.add("active");
+        checklistContainer.style.display = "block";
+        nextBtn.style.display = "none";
+      } else {
+        issuingForm.reportValidity();
+      }
+    });
+
+    checklistForm.addEventListener("submit", function (e) {
+      e.preventDefault();
+
+      const issuingData = {
+        srNo: srNoCounter++,
+        username: document.getElementById("username")?.value || "",
+        deptName: document.getElementById("deptName")?.value || "",
+        dateOfIssue: document.getElementById("dateOfIssue")?.value || "",
+        laptop: document.getElementById("laptop")?.value || "",
+        serialNo: document.getElementById("serialNo")?.value || "",
+        configuration: document.getElementById("configuration")?.value || "",
+        accessories: document.getElementById("accessories")?.value || "",
+        assetTag: document.getElementById("assetTag")?.value || "",
+        issuedPerson: document.getElementById("issuedPerson")?.value || "",
+      };
+
+      const checklistData = {
+        systemName: document.getElementById("systemName")?.value || "",
+        statuses: {},
+      };
+      for (let i = 1; i <= 32; i++) {
+        const statusElement = document.querySelector(
+          `select[name="status${i}"]`
+        );
+        checklistData.statuses[`status${i}`] = statusElement
+          ? statusElement.value
+          : "N/A";
+      }
+
+      const combinedData = { ...issuingData, checklist: checklistData };
+
+      records.push(combinedData);
+      console.log("Record added:", combinedData);
+      console.log("Current records array:", records);
+
+      // Save records to localStorage
+      try {
+        localStorage.setItem(
+          "systemAllocationRecords",
+          JSON.stringify(records)
+        );
+        console.log("Saved records to localStorage:", records);
+      } catch (error) {
+        console.error("Error saving records to localStorage:", error);
+      }
+
+      renderSystemAllocationDashboard();
+
+      issuingForm.reset();
+      checklistForm.reset();
+      document.getElementById("checklistUsername").textContent = "";
+      document.getElementById("checklistSerialNo").textContent = "";
+      document.getElementById("checklistAssetTag").textContent = "";
+      issuingContainer.classList.add("active");
+      checklistContainer.classList.remove("active");
+      checklistContainer.style.display = "none";
+      nextBtn.style.display = "block";
+    });
+
+    if (addRecordBtn) {
+      addRecordBtn.addEventListener("click", function () {
+        issuingForm.reset();
+        checklistForm.reset();
+        document.getElementById("checklistUsername").textContent = "";
+        document.getElementById("checklistSerialNo").textContent = "";
+        document.getElementById("checklistAssetTag").textContent = "";
+        issuingContainer.classList.add("active");
+        checklistContainer.classList.remove("active");
+        checklistContainer.style.display = "none";
+        nextBtn.style.display = "block";
+      });
+    }
+
+    renderSystemAllocationDashboard();
+  }
+
   function populateFilters(data, tableType) {
     console.log(`Populating filters for table type: ${tableType}`);
-    const filterGroup = document.querySelector(".filter-group:not(:first-child)");
+    const filterGroup = document.querySelector(
+      ".filter-group:not(:first-child)"
+    );
     if (!filterGroup) {
       console.error("Filter group element not found in the DOM");
       return;
@@ -858,7 +1218,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function applyFiltersAndSearch(data) {
     console.log("Applying filters and search to data");
-    const searchInput = document.getElementById("searchInput")?.value.toLowerCase() || "";
+    const searchInput =
+      document.getElementById("searchInput")?.value.toLowerCase() || "";
     let filteredData = [...data];
 
     if (searchInput) {
@@ -923,15 +1284,18 @@ document.addEventListener("DOMContentLoaded", function () {
     tbody.innerHTML = "";
 
     if (data.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="100" class="empty-message">No data available</td></tr>';
+      tbody.innerHTML =
+        '<tr><td colspan="100" class="empty-message">No data available</td></tr>';
       return;
     }
 
     const allColumns = Object.keys(data[0]);
-    const visibleColumns = visibleColumnsMap[currentTableType.toLowerCase()] || allColumns;
+    const visibleColumns =
+      visibleColumnsMap[currentTableType.toLowerCase()] || allColumns;
 
     const checkboxHeader = document.createElement("th");
-    checkboxHeader.innerHTML = '<input type="checkbox" id="selectAllCheckbox" />';
+    checkboxHeader.innerHTML =
+      '<input type="checkbox" id="selectAllCheckbox" />';
     headerRow.appendChild(checkboxHeader);
 
     visibleColumns.forEach((column) => {
@@ -980,7 +1344,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
     rawWidths[0] = 40;
     const totalRawWidth = rawWidths.reduce((sum, width) => sum + width, 0);
-    const tableWrapperWidth = tableWrapper ? tableWrapper.clientWidth : window.innerWidth - 270;
+    const tableWrapperWidth = tableWrapper
+      ? tableWrapper.clientWidth
+      : window.innerWidth - 270;
     const availableWidth = tableWrapperWidth - 40;
     const widthRatio = availableWidth / (totalRawWidth - rawWidths[0]);
 
@@ -1056,11 +1422,14 @@ document.addEventListener("DOMContentLoaded", function () {
     try {
       sortColumn = null;
       sortDirection = "asc";
-      const response = await fetch(`${BACKEND_URL}/fetchData/${tableType}`, { credentials: "include" });
-      if (!response.ok) throw new Error(`Network response was not ok: ${response.statusText}`);
+      const response = await fetch(`${BACKEND_URL}/fetchData/${tableType}`, {
+        credentials: "include",
+      });
+      if (!response.ok)
+        throw new Error(`Network response was not ok: ${response.statusText}`);
       const data = await response.json();
 
-      allAssets = data.map(item => {
+      allAssets = data.map((item) => {
         const newItem = { ...item };
         for (const key in newItem) {
           if (key.toLowerCase().includes("date")) {
@@ -1075,8 +1444,12 @@ document.addEventListener("DOMContentLoaded", function () {
       renderTable(filteredData);
 
       const searchBar = document.querySelector(".search-bar");
-      const filterGroup = document.querySelector(".filter-group:not(:first-child)");
-      const downloadBtnContainer = document.querySelector(".download-btn-container");
+      const filterGroup = document.querySelector(
+        ".filter-group:not(:first-child)"
+      );
+      const downloadBtnContainer = document.querySelector(
+        ".download-btn-container"
+      );
       const tableWrapper = document.querySelector(".table-wrapper");
 
       if (searchBar) searchBar.classList.remove("hidden");
@@ -1105,11 +1478,13 @@ document.addEventListener("DOMContentLoaded", function () {
       }
       const tbody = document.getElementById("assetTableBody");
       if (tbody) {
-        tbody.innerHTML = '<tr><td colspan="100" class="empty-message">Error loading data</td></tr>';
+        tbody.innerHTML =
+          '<tr><td colspan="100" class="empty-message">Error loading data</td></tr>';
       }
     }
   }
 
+  // Moved inline script from asset-tracking.html: Initialize table and modal functionality
   const tableTypeFilterTracking = document.getElementById("tableTypeFilter");
   if (tableTypeFilterTracking) {
     tableTypeFilterTracking.value = "systems";
@@ -1122,8 +1497,12 @@ document.addEventListener("DOMContentLoaded", function () {
         fetchData(currentTableType);
       } else {
         const searchBar = document.querySelector(".search-bar");
-        const filterGroup = document.querySelector(".filter-group:not(:first-child)");
-        const downloadBtnContainer = document.querySelector(".download-btn-container");
+        const filterGroup = document.querySelector(
+          ".filter-group:not(:first-child)"
+        );
+        const downloadBtnContainer = document.querySelector(
+          ".download-btn-container"
+        );
         const tableWrapper = document.querySelector(".table-wrapper");
         const tbody = document.getElementById("assetTableBody");
         const headerRow = document.getElementById("tableHeaderRow");
@@ -1184,9 +1563,41 @@ document.addEventListener("DOMContentLoaded", function () {
             p.innerHTML = `<strong>${formattedKey}:</strong> `;
             p.appendChild(link);
           } else {
-            p.innerHTML = `<strong>${formattedKey}:</strong> <span class="editable-field" data-field="${key}">${displayValue || ""}</span>`;
+            p.innerHTML = `<strong>${formattedKey}:</strong> <span class="editable-field" data-field="${key}">${
+              displayValue || ""
+            }</span>`;
           }
           modalContent.appendChild(p);
+        }
+      }
+
+      // Add "Generate Form" button only for "systems" table type
+      if (currentTableType.toLowerCase() === "systems") {
+        const modalActions = modal.querySelector(".modal-actions");
+        if (modalActions) {
+          // Remove any existing "Generate Form" button to prevent duplicates
+          const existingGenerateFormBtn =
+            modalActions.querySelector("#generateFormBtn");
+          if (existingGenerateFormBtn) {
+            existingGenerateFormBtn.remove();
+          }
+
+          // Create new "Generate Form" button
+          const generateFormBtn = document.createElement("button");
+          generateFormBtn.className = "action-btn generate-form";
+          generateFormBtn.id = "generateFormBtn";
+          generateFormBtn.textContent = "Generate Form";
+          generateFormBtn.addEventListener("click", () => {
+            generateSystemAllocationForm(item);
+          });
+
+          // Insert "Generate Form" button after the edit button
+          const editBtn = modalActions.querySelector("#editAssetBtn");
+          if (editBtn) {
+            editBtn.insertAdjacentElement("afterend", generateFormBtn);
+          } else {
+            modalActions.appendChild(generateFormBtn);
+          }
         }
       }
 
@@ -1237,18 +1648,28 @@ document.addEventListener("DOMContentLoaded", function () {
         const updatedSaveBtn = document.getElementById("saveAssetBtn");
 
         updatedEditBtn.addEventListener("click", () => {
-          const editableFields = modalContent.querySelectorAll(".editable-field");
-          const primaryKeyFields = primaryKeyFieldsMap[currentTableType.toLowerCase()] || [];
+          const editableFields =
+            modalContent.querySelectorAll(".editable-field");
+          const primaryKeyFields =
+            primaryKeyFieldsMap[currentTableType.toLowerCase()] || [];
 
           editableFields.forEach((field) => {
             const fieldName = field.dataset.field;
-            if (!excludedFields.includes(fieldName) && !primaryKeyFields.includes(fieldName)) {
+            if (
+              !excludedFields.includes(fieldName) &&
+              !primaryKeyFields.includes(fieldName)
+            ) {
               const input = document.createElement("input");
-              input.type = fieldName.includes("date") || fieldName.includes("Date") ? "date" :
-                           fieldName.includes("price") || fieldName.includes("cost") ? "number" :
-                           "text";
+              input.type =
+                fieldName.includes("date") || fieldName.includes("Date")
+                  ? "date"
+                  : fieldName.includes("price") || fieldName.includes("cost")
+                  ? "number"
+                  : "text";
               input.className = "edit-input";
-              input.value = fieldName.toLowerCase().includes("date") ? field.textContent : field.textContent;
+              input.value = fieldName.toLowerCase().includes("date")
+                ? field.textContent
+                : field.textContent;
               input.dataset.field = fieldName;
               field.style.display = "none";
               field.parentElement.appendChild(input);
@@ -1273,7 +1694,10 @@ document.addEventListener("DOMContentLoaded", function () {
               if (newValue) {
                 const datePattern = /^\d{4}-\d{2}-\d{2}$/;
                 if (!datePattern.test(newValue)) {
-                  showErrorMessage(`Invalid date format for ${fieldName}. Expected YYYY-MM-DD.`, modalContent);
+                  showErrorMessage(
+                    `Invalid date format for ${fieldName}. Expected YYYY-MM-DD.`,
+                    modalContent
+                  );
                   return;
                 }
               }
@@ -1282,7 +1706,9 @@ document.addEventListener("DOMContentLoaded", function () {
             const normalizedNewValue = fieldName.toLowerCase().includes("date")
               ? normalizeDateForComparison(newValue)
               : (newValue || "").toString();
-            const normalizedOriginalValue = fieldName.toLowerCase().includes("date")
+            const normalizedOriginalValue = fieldName
+              .toLowerCase()
+              .includes("date")
               ? normalizeDateForComparison(originalValue)
               : originalValue;
 
@@ -1333,9 +1759,11 @@ document.addEventListener("DOMContentLoaded", function () {
             const index = allAssets.findIndex((asset) => {
               const matchesSrNo = asset.sr_no === updatedItem.sr_no;
               const matchesMonitorTag =
-                asset.monitor_asset_tag === (updatedItem.monitor_asset_tag || null);
+                asset.monitor_asset_tag ===
+                (updatedItem.monitor_asset_tag || null);
               const matchesMachineTag =
-                asset.machine_asset_tag === (updatedItem.machine_asset_tag || null);
+                asset.machine_asset_tag ===
+                (updatedItem.machine_asset_tag || null);
               const matchesAssetTag =
                 asset.asset_tag === (updatedItem.asset_tag || null);
               if (currentTableType.toLowerCase() === "systems") {
@@ -1355,12 +1783,69 @@ document.addEventListener("DOMContentLoaded", function () {
             updatedSaveBtn.style.display = "none";
           } catch (error) {
             console.error("Error updating asset:", error);
-            showErrorMessage("Failed to update asset. Please try again.", modalContent);
+            showErrorMessage(
+              "Failed to update asset. Please try again.",
+              modalContent
+            );
           }
         });
       }
     }
   }
+
+  function generateSystemAllocationForm(item) {
+    console.log("Generating system allocation form for item:", item);
+
+    // Store the item data in localStorage to access it on the target page
+    try {
+        localStorage.setItem("systemAllocationItem", JSON.stringify(item));
+        console.log("Item data stored in localStorage:", item);
+    } catch (error) {
+        console.error("Error storing item in localStorage:", error);
+        const modalContent = document.getElementById("assetDetailContent");
+        if (modalContent) {
+            showErrorMessage(
+                "Failed to store form data. Please try again.",
+                modalContent
+            );
+        }
+        return;
+    }
+
+    // Close the modal
+    const modal = document.getElementById("assetDetailModal");
+    if (modal) {
+        modal.style.display = "none";
+    } else {
+        console.warn("Asset detail modal not found, cannot close modal.");
+    }
+
+    // Open laptop-checklist.html in a new tab
+    try {
+        const newTab = window.open("laptop-checklist.html", "_blank");
+        if (!newTab) {
+            console.error("Failed to open new tab. Popup blocker may be enabled.");
+            const modalContent = document.getElementById("assetDetailContent");
+            if (modalContent) {
+                showErrorMessage(
+                    "Failed to open form. Please allow popups and try again.",
+                    modalContent
+                );
+            }
+        } else {
+            console.log("Opened new tab for laptop-checklist.html");
+        }
+    } catch (error) {
+        console.error("Error opening new tab:", error);
+        const modalContent = document.getElementById("assetDetailContent");
+        if (modalContent) {
+            showErrorMessage(
+                "Failed to open form page. Please try again.",
+                modalContent
+            );
+        }
+    }
+}
 
   const exportExcelBtn = document.getElementById("export-excel-btn");
   if (exportExcelBtn) {
@@ -1379,7 +1864,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
           if (!response.ok) {
             const errorText = await response.text();
-            throw new Error(`Failed to generate Excel file: ${response.status} - ${errorText}`);
+            throw new Error(
+              `Failed to generate Excel file: ${response.status} - ${errorText}`
+            );
           }
 
           const blob = await response.blob();
@@ -1387,15 +1874,17 @@ document.addEventListener("DOMContentLoaded", function () {
           const a = document.createElement("a");
           a.href = url;
           a.download =
-            response.headers.get("Content-Disposition")?.split("filename=")[1] ||
-            "IT_Inventory_Management.xlsx";
+            response.headers
+              .get("Content-Disposition")
+              ?.split("filename=")[1] || "IT_Inventory_Management.xlsx";
           document.body.appendChild(a);
           a.click();
           a.remove();
           window.URL.revokeObjectURL(url);
         } catch (error) {
           console.error("Error exporting to Excel:", error);
-          const errorContainer = document.querySelector(".download-btn-container") || document.body;
+          const errorContainer =
+            document.querySelector(".download-btn-container") || document.body;
           if (error.message.includes("404")) {
             showErrorMessage(
               "Export failed: Server endpoint not found. Please ensure the server is running.",
@@ -1409,7 +1898,8 @@ document.addEventListener("DOMContentLoaded", function () {
           }
         }
       } else {
-        const errorContainer = document.querySelector(".download-btn-container") || document.body;
+        const errorContainer =
+          document.querySelector(".download-btn-container") || document.body;
         showErrorMessage(
           "Please select at least one row to export.",
           errorContainer
@@ -1430,4 +1920,408 @@ document.addEventListener("DOMContentLoaded", function () {
 
     return selectedRows;
   }
+
+  // Updated logic for laptop-checklist.html: Initialize form functionality with new requirements
+if (window.location.pathname.includes("laptop-checklist.html")) {
+  const issuingContainer = document.querySelector(".issuing-container");
+  const checklistContainer = document.querySelector(".checklist-container");
+  const nextBtn = document.getElementById("nextBtn");
+  const submitBtn = document.getElementById("submitBtn");
+  const issuingForm = document.getElementById("issuingForm");
+  const checklistForm = document.getElementById("checklistForm");
+
+  // Create Save, Print, and Back to List buttons dynamically
+  const saveBtn = document.createElement("button");
+  saveBtn.id = "saveBtn";
+  saveBtn.textContent = "Save";
+  saveBtn.style.display = "none";
+  saveBtn.className = "action-btn submit-btn";
+
+  const printBtn = document.createElement("button");
+  printBtn.id = "printBtn";
+  printBtn.textContent = "Print";
+  printBtn.style.display = "none";
+  printBtn.className = "action-btn print-btn";
+
+  const backBtn = document.createElement("button");
+  backBtn.id = "backBtn";
+  backBtn.textContent = "Back to List";
+  backBtn.style.display = "none";
+  backBtn.className = "action-btn back-btn";
+  backBtn.addEventListener("click", () => {
+    window.location.href = "asset-tracking.html";
+  });
+
+  // Append Save, Print, and Back to List buttons to the checklist form
+  if (checklistForm) {
+    const buttonContainer =
+      checklistForm.querySelector(".form-buttons") ||
+      document.createElement("div");
+    buttonContainer.className = "form-buttons";
+    buttonContainer.appendChild(saveBtn);
+    buttonContainer.appendChild(printBtn);
+    buttonContainer.appendChild(backBtn);
+    checklistForm.appendChild(buttonContainer);
+  }
+
+  if (issuingForm && checklistForm && nextBtn && submitBtn && issuingContainer && checklistContainer)
+  {
+    // Format and set current date for "Issued By / Date" field
+    const currentDate = new Date();
+    const day = currentDate.getDate();
+    const month = currentDate
+      .toLocaleString("default", { month: "short" })
+      .toUpperCase();
+    const year = currentDate.getFullYear();
+    const formattedDate = `${day}-${month}-${year}`;
+    const currentDateElement = document.getElementById("currentDate");
+    if (currentDateElement) {
+      currentDateElement.textContent = formattedDate;
+    }
+
+    // Make specified fields editable, others read-only
+    const editableFields = [
+      "username",
+      "deptName",
+      "dateOfIssue",
+      "accessories",
+    ];
+    const allInputs = issuingForm.querySelectorAll("input");
+    allInputs.forEach((input) => {
+      if (!editableFields.includes(input.id)) {
+        input.setAttribute("readonly", "true");
+      }
+    });
+
+    // Check if we're here to print a record or generate a new form
+    const printSrNo = localStorage.getItem("printSystemAllocationSrNo");
+    const storedItem = localStorage.getItem("systemAllocationItem");
+    let isPrinting = false;
+    let srNo = null;
+    let machineAssetTag = null;
+    let monitorAssetTag = null;
+
+    if (printSrNo) {
+      // Handle printing scenario
+      const srNoNum = Number(printSrNo);
+      console.log("Found printSystemAllocationSrNo in localStorage:", srNoNum);
+
+      // Find the record in the records array
+      const record = records.find((r) => r.srNo === srNoNum);
+      if (record) {
+        console.log("Record found for printing:", record);
+        // Populate issuing form with mapped fields
+        document.getElementById("username").value = record.username || "";
+        document.getElementById("deptName").value = record.deptName || "";
+        document.getElementById("dateOfIssue").value = record.dateOfIssue || "";
+        document.getElementById("laptop").value = record.laptop || "";
+        document.getElementById("serialNo").value = record.serialNo || "";
+        document.getElementById("configuration").value = record.configuration || "";
+        document.getElementById("accessories").value = record.accessories || "";
+        document.getElementById("assetTag").value = record.assetTag || "";
+        document.getElementById("issuedPerson").value = record.issuedPerson || "";
+
+        // Populate checklist form
+        document.getElementById("systemName").value =
+          record.checklist.systemName || "";
+        for (let i = 1; i <= 32; i++) {
+          const statusElement = document.querySelector(
+            `select[name="status${i}"]`
+          );
+          if (statusElement) {
+            statusElement.value =
+              record.checklist.statuses[`status${i}`] || "N/A";
+          }
+        }
+        syncChecklistFields();
+
+        // Show both forms for printing
+        issuingContainer.classList.add("active");
+        checklistContainer.classList.add("active");
+        checklistContainer.style.display = "block";
+        nextBtn.style.display = "none";
+        saveBtn.style.display = "none";
+        printBtn.style.display = "none";
+        backBtn.style.display = "none";
+
+        // Hide other buttons to prevent interaction during printing
+        document
+          .querySelectorAll("button:not(#submitBtn)")
+          .forEach((btn) => (btn.style.display = "none"));
+
+        // Trigger print after a short delay to ensure DOM updates
+        setTimeout(() => {
+          window.print();
+          // Restore visibility after printing
+          document
+            .querySelectorAll("button")
+            .forEach((btn) => (btn.style.display = "inline-block"));
+          checklistContainer.style.display = "none";
+          nextBtn.style.display = "block";
+          saveBtn.style.display = "none";
+          printBtn.style.display = "none";
+          backBtn.style.display = "none";
+        }, 500);
+
+        isPrinting = true;
+      } else {
+        console.error(
+          `No record found for srNo: ${srNoNum} in records array:`,
+          records
+        );
+      }
+
+      // Clean up: Remove the printSrNo from localStorage
+      localStorage.removeItem("printSystemAllocationSrNo");
+      console.log("Cleared printSystemAllocationSrNo from localStorage");
+    } else if (storedItem) {
+      // Handle form generation scenario
+      try {
+        const item = JSON.parse(storedItem);
+        console.log(
+          "Retrieved item from localStorage for form generation:",
+          item
+        );
+
+        // Store keys for updating the record
+        srNo = item.sr_no || null;
+        machineAssetTag = item.machine_asset_tag || null;
+        monitorAssetTag = item.monitor_asset_tag || null;
+
+        // Map the fields as specified
+        document.getElementById("username").value = item.user_name || "";
+        document.getElementById("deptName").value = item.department || "";
+        document.getElementById("dateOfIssue").value = item.date_of_issue || "";
+        document.getElementById("laptop").value = `${item.make || ""} ${item.model || ""}`.trim();
+        document.getElementById("serialNo").value = item.serial_number || "";
+        document.getElementById("configuration").value = `${item.processor || ""} ${item.ram || ""} ${item.hard_disk || ""}`.trim();
+        document.getElementById("accessories").value = item.accessories || "";
+        document.getElementById("assetTag").value = item.machine_asset_tag || "";
+        document.getElementById("issuedPerson").value = item.issued_by || "";
+
+        // Populate checklist form
+        document.getElementById("systemName").value = item.system_name || "";
+        syncChecklistFields();
+
+        // Show the issuing form
+        issuingContainer.classList.add("active");
+        checklistContainer.classList.remove("active");
+        checklistContainer.style.display = "none";
+        nextBtn.style.display = "block";
+        saveBtn.style.display = "none";
+        printBtn.style.display = "none";
+        backBtn.style.display = "none";
+
+        // Clean up: Remove the item from localStorage after use
+        localStorage.removeItem("systemAllocationItem");
+        console.log("Cleared systemAllocationItem from localStorage");
+      } catch (error) {
+        console.error("Error retrieving or parsing item from localStorage:", error);
+        issuingContainer.classList.add("active");
+        checklistContainer.classList.remove("active");
+        checklistContainer.style.display = "none";
+        nextBtn.style.display = "block";
+        saveBtn.style.display = "none";
+        printBtn.style.display = "none";
+        backBtn.style.display = "none";
+      }
+    } else {
+      // Default: Show empty form
+      console.warn(
+        "No system allocation item or print request found in localStorage, showing empty form."
+      );
+      issuingContainer.classList.add("active");
+      checklistContainer.classList.remove("active");
+      checklistContainer.style.display = "none";
+      nextBtn.style.display = "block";
+      saveBtn.style.display = "none";
+      printBtn.style.display = "none";
+      backBtn.style.display = "none";
+    }
+
+    // Add asterisk to systemName label to indicate it's mandatory
+    const systemNameLabel = checklistForm.querySelector(
+      'label[for="systemName"]'
+    );
+    if (systemNameLabel) {
+      systemNameLabel.innerHTML =
+        'System Name <span style="color: red;">*</span>';
+    }
+    const systemNameInput = document.getElementById("systemName");
+    if (systemNameInput) {
+      systemNameInput.setAttribute("required", "true");
+    }
+
+    // Next button handler - only transitions to checklist form
+    nextBtn.addEventListener("click", function () {
+      if (issuingForm.checkValidity()) {
+        syncChecklistFields();
+        issuingContainer.classList.remove("active");
+        checklistContainer.classList.add("active");
+        checklistContainer.style.display = "block";
+        nextBtn.style.display = "none";
+        saveBtn.style.display = "inline-block";
+        printBtn.style.display = "inline-block";
+        backBtn.style.display = "inline-block";
+      } else {
+        issuingForm.reportValidity();
+      }
+    });
+
+    // Save button handler - updates the database and retains form state
+    saveBtn.addEventListener("click", async function (e) {
+      e.preventDefault();
+
+      // Validate systemName field
+      const systemName = document.getElementById("systemName")?.value.trim();
+      if (!systemName) {
+        showErrorMessage("System Name is mandatory. Please fill in this field.", checklistContainer);
+        alert("System Name is mandatory. Please fill in this field.");
+        return;
+      }
+
+      // Collect form data
+      const issuingData = {
+        srNo: srNo || srNoCounter++,
+        username: document.getElementById("username")?.value || "",
+        deptName: document.getElementById("deptName")?.value || "",
+        dateOfIssue: document.getElementById("dateOfIssue")?.value || "",
+        laptop: document.getElementById("laptop")?.value || "",
+        serialNo: document.getElementById("serialNo")?.value || "",
+        configuration: document.getElementById("configuration")?.value || "",
+        accessories: document.getElementById("accessories")?.value || "",
+        assetTag: document.getElementById("assetTag")?.value || "",
+        issuedPerson: document.getElementById("issuedPerson")?.value || "",
+      };
+
+      const checklistData = {
+        systemName: systemName,
+        statuses: {},
+      };
+      for (let i = 1; i <= 32; i++) {
+        const statusElement = document.querySelector(
+          `select[name="status${i}"]`
+        );
+        checklistData.statuses[`status${i}`] = statusElement
+          ? statusElement.value
+          : "N/A";
+      }
+
+      const combinedData = { ...issuingData, checklist: checklistData };
+
+      // Update records array
+      const recordIndex = records.findIndex((r) => r.srNo === combinedData.srNo);
+      if (recordIndex !== -1) {
+        records[recordIndex] = combinedData;
+        console.log("Record updated:", records[recordIndex]);
+      } else {
+        records.push(combinedData);
+        console.log("Record added:", combinedData);
+      }
+      console.log("Current records array:", records);
+
+      // Save records to localStorage
+      try {
+        localStorage.setItem("systemAllocationRecords", JSON.stringify(records));
+        console.log("Updated records in localStorage:", records);
+      } catch (error) {
+        console.error("Error saving records to localStorage:", error);
+      }
+
+      // Update the asset in the database if srNo and asset tags are available
+      if (srNo && machineAssetTag && monitorAssetTag) {
+        const updates = {
+          user_name: issuingData.username,
+          department: issuingData.deptName,
+          date_of_issue: issuingData.dateOfIssue || null,
+          accessories: issuingData.accessories
+        };
+
+        try {
+          const response = await fetch(`${BACKEND_URL}/assets/updateByKey`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              tableType: "systems",
+              key: {
+                sr_no: srNo,
+                machine_asset_tag: machineAssetTag,
+                monitor_asset_tag: monitorAssetTag
+              },
+              updates: updates,
+            }),
+            credentials: "include",
+          });
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(
+              `Failed to update asset: ${response.status} - ${errorText}`
+            );
+          }
+
+          console.log("Asset updated successfully in the database!");
+        } catch (error) {
+          console.error("Error updating asset in database:", error);
+          alert("Failed to update asset in the database. Please try again.");
+        }
+      }
+
+      // Keep the form state and show checklist section with buttons
+      syncChecklistFields();
+      issuingContainer.classList.remove("active");
+      checklistContainer.classList.add("active");
+      checklistContainer.style.display = "block";
+      nextBtn.style.display = "none";
+      saveBtn.style.display = "inline-block";
+      printBtn.style.display = "inline-block";
+      backBtn.style.display = "inline-block";
+
+      renderSystemAllocationDashboard();
+    });
+
+    printBtn.addEventListener("click", function (e) {
+      e.preventDefault();
+
+      // Validate systemName field
+      const systemName = document.getElementById("systemName")?.value.trim();
+      if (!systemName) {
+        showErrorMessage("System Name is mandatory. Please fill in this field.", checklistContainer);
+        alert("System Name is mandatory. Please fill in this field.");
+        return;
+      }
+
+      // Temporarily hide buttons to avoid printing them
+      document
+        .querySelectorAll("button:not(#submitBtn)")
+        .forEach((btn) => (btn.style.display = "none"));
+
+      // Trigger print
+      window.print();
+
+      // Restore visibility after printing
+      document
+        .querySelectorAll("button")
+        .forEach((btn) => (btn.style.display = "inline-block"));
+      checklistContainer.style.display = "none";
+      nextBtn.style.display = "block";
+      saveBtn.style.display = "none";
+      printBtn.style.display = "none";
+      backBtn.style.display = "none";
+
+      issuingForm.reset();
+      checklistForm.reset();
+      document.getElementById("checklistUsername").textContent = "";
+      document.getElementById("checklistSerialNo").textContent = "";
+      document.getElementById("checklistAssetTag").textContent = "";
+      issuingContainer.classList.add("active");
+      checklistContainer.classList.remove("active");
+    });
+
+    // Remove the old submit button's functionality as it's replaced by Save and Print
+    submitBtn.style.display = "none";
+  }
+}
 });

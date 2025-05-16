@@ -19,7 +19,19 @@
     </video>
 
     <!-- Error Container -->
-    <div id="errorContainer" style="display: none; position: fixed; top: 10px; right: 10px; background: #ff4444; color: white; padding: 10px; border-radius: 5px;"></div>
+    <div
+      id="errorContainer"
+      style="
+        display: none;
+        position: fixed;
+        top: 10px;
+        right: 10px;
+        background: #ff4444;
+        color: white;
+        padding: 10px;
+        border-radius: 5px;
+      "
+    ></div>
 
     <div class="dashboard">
       <!-- Sidebar -->
@@ -57,7 +69,7 @@
               >
             </li>
             <li>
-              <a href="#"
+              <a href="laptop-checklist.html"
                 ><i
                   class="fas fa-check"
                   data-tooltip="System Allocation & Checklist Form"
@@ -67,7 +79,10 @@
             </li>
           </ul>
         </div>
-        <button class="logout-btn" onclick="window.location.href='/Asset_Management/index.html'">
+        <button
+          class="logout-btn"
+          onclick="window.location.href='/Asset_Management/index.html'"
+        >
           <i class="fas fa-sign-out-alt" data-tooltip="Logout"></i
           ><span>Logout</span>
         </button>
@@ -149,6 +164,11 @@
               >
                 Save
               </button>
+              <button
+                class="action-btn generate-form"
+                id="generateFormBtn"
+                data-tooltip="Generate System Allocation & Checklist Form"
+                onclick="generateSystemAllocationForm()"> Generate Form </button>
             </div>
             <div id="assetDetailContent" class="modal-body">
               <!-- Content will be dynamically generated -->
@@ -159,102 +179,5 @@
     </div>
 
     <script src="../script.js"></script>
-    <!-- Inline script to add .loaded class and debug DOM elements -->
-    <script>
-      console.log("Inline script running...");
-      const dashboard = document.querySelector(".dashboard");
-      if (dashboard) {
-        console.log("Dashboard element found, adding .loaded class");
-        dashboard.classList.add("loaded");
-      } else {
-        console.error("Dashboard element not found in the DOM");
-      }
-
-      const sidebar = document.getElementById("sidebar");
-      if (sidebar) {
-        console.log("Sidebar element found");
-      } else {
-        console.error("Sidebar element not found in the DOM");
-      }
-
-      const tableTypeFilter = document.getElementById("tableTypeFilter");
-      if (tableTypeFilter) {
-        console.log("Table type filter element found");
-      } else {
-        console.error("Table type filter element not found in the DOM");
-      }
-    </script>
-    <!-- Cloudflare scripts (keeping them as they are) -->
-    <script>
-      (function () {
-        function c() {
-          var b = a.contentDocument || a.contentWindow.document;
-          if (b) {
-            var d = b.createElement("script");
-            d.innerHTML =
-              "window.__CF$cv$params={r:'92665c0cbd801373',t:'MTc0Mjk4OTA4My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";
-            b.getElementsByTagName("head")[0].appendChild(d);
-          }
-        }
-        if (document.body) {
-          var a = document.createElement("iframe");
-          a.height = 1;
-          a.width = 1;
-          a.style.position = "absolute";
-          a.style.top = 0;
-          a.style.left = 0;
-          a.style.border = "none";
-          a.style.visibility = "hidden";
-          document.body.appendChild(a);
-          if ("loading" !== document.readyState) c();
-          else if (window.addEventListener)
-            document.addEventListener("DOMContentLoaded", c);
-          else {
-            var e = document.onreadystatechange || function () {};
-            document.onreadystatechange = function (b) {
-              e(b);
-              "loading" !== document.readyState &&
-                ((document.onreadystatechange = e), c());
-            };
-          }
-        }
-      })();
-    </script>
-    <script>
-      (function () {
-        function c() {
-          var b = a.contentDocument || a.contentWindow.document;
-          if (b) {
-            var d = b.createElement("script");
-            d.innerHTML =
-              "window.__CF$cv$params={r:'92666a9d19d3c00b',t:'MTc0Mjk4OTY4MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";
-            b.getElementsByTagName("head")[0].appendChild(d);
-          }
-        }
-        if (document.body) {
-          var a = document.createElement("iframe");
-          a.height = 1;
-          a.width = 1;
-          a.style.position = "absolute";
-          a.style.top = 0;
-          a.style.left = 0;
-          a.style.border = "none";
-          a.style.visibility = "hidden";
-          document.body.appendChild(a);
-          if ("loading" !== document.readyState) c();
-          else if (window.addEventListener)
-            document.addEventListener("DOMContentLoaded", c);
-          else {
-            var e = document.onreadystatechange || function () {};
-            document.onreadystatechange = function (b) {
-              e(b);
-              "loading" !== document.readyState &&
-                ((document.onreadystatechange = e), c());
-            };
-          }
-        }
-      })();
-    </script>
-    <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'926e15a01a096773',t:'MTc0MzA3MDA4NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
   </body>
 </html>

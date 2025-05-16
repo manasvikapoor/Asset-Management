@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Allocation Form</title>
+    <link rel="stylesheet" href="../laptop-checklist.css">
+</head>
+<body>
+    <!-- Issuing Form -->
+    <div class="form-container issuing-container active">
+        <div class="header">
+            <div class="company-info">
+                <img src="../../frontend/media/company-logo.png" alt="Continuum Green Energy Logo" class="company-logo">
+            </div>
+            <div class="company-details">
+                <h1>Continuum Green Energy Pvt. Ltd.</h1>
+                <p>402 & 404, Delphi C Wing, Hiranandani Business Park, <br>Orchard Avenue, Powai, Mumbai - 400 076, India</p>
+            </div>
+            <div class="doc-info">
+                <p><strong>Document Number:</strong> ITD-F-004</p>
+                <p><strong>Revision Number:</strong> 0</p>
+                <p><strong>Effective From:</strong> 1-Jan-21</p>
+            </div>
+        </div>
+        <h2>Laptop / Desktop Issuing Form</h2>
+        <form id="issuingForm">
+            <table class="issuing-table">
+                <tbody>
+                    <tr>
+                        <td>Username</td>
+                        <td><input type="text" id="username" name="username" required></td>
+                    </tr>
+                    <tr>
+                        <td>Dept. Name</td>
+                        <td><input type="text" id="deptName" name="deptName" required></td>
+                    </tr>
+                    <tr>
+                        <td>Date of Issue</td>
+                        <td><input type="date" id="dateOfIssue" name="dateOfIssue" required></td>
+                    </tr>
+                    <tr>
+                        <td>Laptop</td>
+                        <td><input type="text" id="laptop" name="laptop" required></td>
+                    </tr>
+                    <tr>
+                        <td>Serial No.</td>
+                        <td><input type="text" id="serialNo" name="serialNo" required></td>
+                    </tr>
+                    <tr>
+                        <td>Configuration</td>
+                        <td><input type="text" id="configuration" name="configuration" required></td>
+                    </tr>
+                    <tr>
+                        <td>Accessories with Laptop</td>
+                        <td><textarea id="accessories" name="accessories" required></textarea></td>
+                    </tr>
+                    <tr>
+                        <td>Asset Tag</td>
+                        <td><input type="text" id="assetTag" name="assetTag" required></td>
+                    </tr>
+                    <tr>
+                        <td>Issued By / Date</td>
+                        <td><p class="issued-by">Sachin Jagtap<br>- Sr. Manager IT<br><span id="currentDate"></span></p></td>
+                    </tr>
+                    <tr>
+                        <td>Select Issued Person</td>
+                        <td>
+                            <select id="issuedPerson" name="issuedPerson" required>
+                                <option value="" disabled selected>Select a person</option>
+                                <option value="Akshay Jadhav">Akshay Jadhav</option>
+                                <option value="Keten Panhale">Keten Panhale</option>
+                                <option value="Niraj Kamble">Niraj Kamble</option>
+                                <option value="Nitin Divekar">Nitin Divekar</option>
+                                <option value="Sanket Samant">Sanket Samant</option>
+                            </select>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>Username Signature</td>
+                        <td><div id="signatureBox" class="signature-box-content"></div></td>
+                    </tr>
+                </tbody>
+            </table>
+            <button type="button" id="nextBtn">Next</button>
+        </form>
+    </div>
+
+    <!-- Checklist Form -->
+    <div class="form-container checklist-container">
+        <div class="header">
+            <div class="company-info">
+                <img src="../../frontend/media/company-logo.png" alt="Continuum Green Energy Logo" class="company-logo">
+            </div>
+            <div class="company-details">
+                <h2>Continuum Green Energy Pvt. Ltd.</h2>
+                <p>402 & 404, Delphi C Wing, Hiranandani Business Park, <br>Orchard Avenue, Powai, Mumbai - 400 076, India</p>
+            </div>
+            <div class="doc-info">
+                <p><strong>Document Number:</strong> ITD-F-005</p>
+                <p><strong>Revision Number:</strong> 0</p>
+                <p><strong>Effective From:</strong> 1-Jan-21</p>
+            </div>
+        </div>
+        <h2>Laptop Configuration Checklist</h2>
+        <form id="checklistForm">
+            <table class="checklist-table">
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <td id="checklistUsername"></td>
+                        <th>Laptop SR# - <span id="checklistSerialNo"></span></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <th colspan="3">Standard Checklist</th>
+                    </tr>
+                    <tr>
+                        <th>Sr. No</th>
+                        <th>List of Activities</th>
+                        <th>Status</th>
+                    </tr>
+                    <tr><td>1</td><td>Should be create C: and D: Drives Only</td><td><select name="status1" class="status-dropdown"><option value="DONE">DONE</option><option value="N/A">N/A</option></select></td></tr>
+                    <tr><td>2</td><td>C: Drive Restricted</td><td><select name="status2" class="status-dropdown"><option value="DONE">DONE</option><option value="N/A">N/A</option></select></td></tr>
+                    <tr><td>3</td><td>System Name Should be Maintained as Sitename-Dep/LD-UserFirstName</td><td><input type="text" name="systemName" id="systemName" placeholder="Manual Input"></td></tr>
+                    <tr><td>4</td><td>64bit Window Licensed version Installation & Activation</td><td><select name="status4" class="status-dropdown"><option value="DONE">DONE</option><option value="N/A">N/A</option></select></td></tr>
+                    <tr><td>5</td><td>All MB Drivers Installation</td><td><select name="status5" class="status-dropdown"><option value="DONE">DONE</option><option value="N/A">N/A</option></select></td></tr>
+                    <tr><td>6</td><td>Update Windows / Notify updates available</td><td><select name="status6" class="status-dropdown"><option value="DONE">DONE</option><option value="N/A">N/A</option></select></td></tr>
+                    <tr><td>7</td><td>Set Administrator Password & User Password</td><td><select name="status7" class="status-dropdown"><option value="DONE">DONE</option><option value="N/A">N/A</option></select></td></tr>
+                    <tr><td>8</td><td>Create User Profile without user first name and Without Admin Rights</td><td><select name="status8" class="status-dropdown"><option value="DONE">DONE</option><option value="N/A">N/A</option></select></td></tr>
+                    <tr><td>9</td><td>Enable Firewall & Defender Security</td><td><select name="status9" class="status-dropdown"><option value="DONE">DONE</option><option value="N/A">N/A</option></select></td></tr>
+                    <tr><td>10</td><td>Enable System Restore point</td><td><select name="status10" class="status-dropdown"><option value="DONE">DONE</option><option value="N/A">N/A</option></select></td></tr>
+                    <tr><td>11</td><td>Change the Desktop and My Document folders default path to D Drive</td><td><select name="status11" class="status-dropdown"><option value="DONE">DONE</option><option value="N/A">N/A</option></select></td></tr>
+                    <tr><td>12</td><td>Remove never expire password for user & Set User password expiry 30 days & Password must be Complexity in Group Policy</td><td><select name="status12" class="status-dropdown"><option value="DONE">DONE</option><option value="N/A">N/A</option></select></td></tr>
+                    <tr>
+                        <th colspan="3">Software's Installation</th>
+                    </tr>
+                    <tr><td>13</td><td>Antivirus installation</td><td><select name="status13" class="status-dropdown"><option value="DONE">DONE</option><option value="N/A">N/A</option></select></td></tr>
+                    <tr><td>14</td><td>Office 365 Installation</td><td><select name="status14" class="status-dropdown"><option value="DONE">DONE</option><option value="N/A">N/A</option></select></td></tr>
+                    <tr><td>15</td><td>Winzip / Winrar</td><td><select name="status15" class="status-dropdown"><option value="DONE">DONE</option><option value="N/A">N/A</option></select></td></tr>
+                    <tr><td>16</td><td>Acrobat Reader 11 & Update Same</td><td><select name="status16" class="status-dropdown"><option value="DONE">DONE</option><option value="N/A">N/A</option></select></td></tr>
+                    <tr><td>17</td><td>Google Chrome & Set ITHelpdsek Bookmark</td><td><select name="status17" class="status-dropdown"><option value="DONE">DONE</option><option value="N/A">N/A</option></select></td></tr>
+                    <tr><td>18</td><td>Configure Druva Backup</td><td><select name="status18" class="status-dropdown"><option value="DONE">DONE</option><option value="N/A">N/A</option></select></td></tr>
+                    <tr><td>19</td><td>Configure Azure VPN</td><td><select name="status19" class="status-dropdown"><option value="DONE">DONE</option><option value="N/A">N/A</option></select></td></tr>
+                    <tr><td>20</td><td>Microsoft Teams</td><td><select name="status20" class="status-dropdown"><option value="DONE">DONE</option><option value="N/A">N/A</option></select></td></tr>
+                    <tr><td>21</td><td>Configure the Outlook, and map Old OST/PST</td><td><select name="status21" class="status-dropdown"><option value="DONE">DONE</option><option value="N/A">N/A</option></select></td></tr>
+                    <tr><td>22</td><td>Configure Outlook Signature</td><td><select name="status22" class="status-dropdown"><option value="DONE">DONE</option><option value="N/A">N/A</option></select></td></tr>
+                    <tr><td>23</td><td>Tally (If Required)</td><td><select name="status23" class="status-dropdown"><option value="DONE">DONE</option><option value="N/A">N/A</option></select></td></tr>
+                    <tr><td>24</td><td>Map Network shared folder (If Required)</td><td><select name="status24" class="status-dropdown"><option value="DONE">DONE</option><option value="N/A">N/A</option></select></td></tr>
+                    <tr><td>25</td><td>Install Printer Drivers</td><td><select name="status25" class="status-dropdown"><option value="DONE">DONE</option><option value="N/A">N/A</option></select></td></tr>
+                    <tr><td>26</td><td>Set Scan Folder in Printer</td><td><select name="status26" class="status-dropdown"><option value="DONE">DONE</option><option value="N/A">N/A</option></select></td></tr>
+                    <tr><td>27</td><td>Tight VNC</td><td><select name="status27" class="status-dropdown"><option value="DONE">DONE</option><option value="N/A">N/A</option></select></td></tr>
+                    <tr><td>28</td><td>DSC software install</td><td><select name="status28" class="status-dropdown"><option value="DONE">DONE</option><option value="N/A">N/A</option></select></td></tr>
+                    <tr><td>29</td><td>Data Backup & Restore</td><td><select name="status29" class="status-dropdown"><option value="DONE">DONE</option><option value="N/A">N/A</option></select></td></tr>
+                    <tr><td>30</td><td>AutoCAD (If Required)</td><td><select name="status30" class="status-dropdown"><option value="DONE">DONE</option><option value="N/A">N/A</option></select></td></tr>
+                    <tr><td>31</td><td>Access to Knowledge Portal</td><td><select name="status31" class="status-dropdown"><option value="DONE">DONE</option><option value="N/A">N/A</option></select></td></tr>
+                    <tr><td>32</td><td>Any Other License Software</td><td><select name="status32" class="status-dropdown"><option value="DONE">DONE</option><option value="N/A">N/A</option></select></td></tr>
+                    <tr><td>33</td><td>Asset Tag Number</td><td id="checklistAssetTag"></td></tr>
+                </tbody>
+            </table>
+            <button type="submit" id="submitBtn">Submit</button>
+        </form>
+    </div>
+
+    <script src="../laptop-checklist.js"></script>
+</body>
+</html>

@@ -13,7 +13,10 @@ const port = 3000;
 
 // Middleware to parse JSON, handle CORS, serve static files, and parse cookies
 app.use(express.json());
-app.use(cors());
+app.use(cors({
+  origin: 'http://localhost:5501', // or whatever port your frontend uses
+  credentials: true // This is important for cookies
+}));
 app.use(express.static("public"));
 app.use(cookieParser()); // Enable cookie parsing
 app.use(express.urlencoded({ extended: true }));
@@ -85,10 +88,10 @@ app.post("/login", async (req, res) => {
 
     // Set a secure, HTTP-only cookie
     res.cookie("sessionId", sessionId, {
-      maxAge: 24 * 60 * 60 * 1000, // 1 day
+      maxAge: 24 * 60 * 60 * 1000,
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production", // Secure in production
-      sameSite: "strict",
+      secure: false,
+      sameSite: "lax",
     });
 
     res.json({ message: "Login successful" });

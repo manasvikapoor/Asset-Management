@@ -114,6 +114,19 @@ function printContent() {
     // Sync checklist fields to ensure data is populated
     syncChecklistFields();
 
+    // Format the current date and time
+    const now = new Date();
+    const month = (now.getMonth() + 1).toString(); // Month is 0-based, so add 1
+    const day = now.getDate().toString();
+    const year = now.getFullYear().toString().slice(-2); // Last two digits of the year
+    const hours = now.getHours();
+    const minutes = now.getMinutes().toString().padStart(2, '0');
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    const hours12 = hours % 12 || 12; // Convert to 12-hour format
+    const formattedDateTime = `${month}/${day}/${year} ${hours12}:${minutes} ${ampm}`;
+    // Set the CSS custom property for the date and time
+    document.documentElement.style.setProperty('--print-date-time', `"${formattedDateTime}"`);
+
     // Store original form elements to restore after printing
     const elementsToReplace = [];
     const inputs = document.querySelectorAll("input, textarea, select");

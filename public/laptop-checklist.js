@@ -371,7 +371,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 document.getElementById("dateOfIssue").value = item.date_of_issue || "";
                 document.getElementById("laptop").value = `${item.make || ""} ${item.model || ""}`.trim();
                 document.getElementById("serialNo").value = item.serial_number || "";
-                document.getElementById("configuration").value = `${item.processor || ""} ${item.ram || ""} ${item.hard_disk || ""}`.trim();
+                document.getElementById("configuration").value = `${item.processor || ""} ${item.RAM || ""} ${item.hard_disk || ""}`.trim();
                 document.getElementById("accessories").value = item.accessories || "";
                 document.getElementById("assetTag").value = item.machine_asset_tag || "";
                 document.getElementById("issuedPerson").value = item.issued_by || "";

@@ -240,11 +240,11 @@ const primaryKeyFieldsMap = {
 
 // Define non-required fields for each table type
 const nonRequiredFieldsMap = {
-  systems: ["remarks", "date_of_issue"],
-  servers: ["remarks"],
-  switch: ["remarks"],
-  firewall: ["remarks"],
-  printers_and_scanners: ["remarks"],
+  systems: ["remarks", "date_of_issue", "invoice_number", "invoice_file"],
+  servers: ["remarks", "invoice_number", "invoice_file"],
+  switch: ["remarks", "invoice_number", "invoice_file"],
+  firewall: ["remarks", "invoice_number", "invoice_file"],
+  printers_and_scanners: ["remarks", "invoice_number", "invoice_file"],
 };
 
 // Helper function to format column names
@@ -271,7 +271,7 @@ function getColumnValue(item, columnName) {
 
 // Helper function to normalize a date string
 function normalizeDateAsUTC(dateValue) {
-  if (!dateValue) return "";
+  if (!dateValue || dateValue === "N/A") return "";
   if (/^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
     return dateValue;
   }
@@ -283,14 +283,110 @@ function normalizeDateAsUTC(dateValue) {
   )}`;
 }
 
-// Helper function to format dates for display
 function formatDateForDisplay(dateValue) {
+  if (!dateValue || dateValue === "N/A") return "N/A";
   return normalizeDateAsUTC(dateValue);
 }
 
-// Helper function to normalize dates for comparison
 function normalizeDateForComparison(dateValue) {
+  if (!dateValue || dateValue === "N/A") return "";
   return normalizeDateAsUTC(dateValue);
+}
+
+// Helper function to get financial year from a date string (YYYY-MM-DD)
+function getFinancialYear(dateStr) {
+  if (!dateStr || !/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return "";
+  const date = new Date(dateStr);
+  const year = date.getFullYear();
+  const month = date.getMonth() + 1; // Months are 0-based
+  const startYear = month >= 4 ? year : year - 1;
+  const endYear = startYear + 1;
+  return `${startYear.toString().slice(-2)}-${endYear.toString().slice(-2)}`;
+}
+
+// Function to fetch the last counter for a company and device type
+async function fetchLastCounter(company, deviceType, isMachine = true) {
+  try {
+    const response = await fetch(`${BACKEND_URL}/fetchLastCounter`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        company,
+        deviceType,
+        tableType: "systems",
+        isMachine,
+      }),
+      credentials: "include",
+    });
+    if (!response.ok) throw new Error("Failed to fetch counter");
+    const data = await response.json();
+    return data.lastCounter || 0; // Default to 0 if no assets
+  } catch (error) {
+    console.error("Error fetching last counter:", error.message);
+    return 0; // Fallback to 0
+  }
+}
+
+// Function to generate asset tag
+async function generateAssetTag(deviceType, isMachine = true) {
+  const companyInput = document
+    .querySelector("#companyInput")
+    ?.value.trim()
+    .toUpperCase();
+  const deviceTypeSelect = document.querySelector("#deviceTypeInput")?.value;
+  const dateOfPurchaseInput = document.querySelector(
+    isMachine
+      ? "#machine_date_of_purchaseInput"
+      : "#monitor_date_of_purchaseInput"
+  )?.value;
+  const serialInput = document
+    .querySelector(isMachine ? "#serial_numberInput" : "#monitor_serialInput")
+    ?.value.trim()
+    .toUpperCase();
+  const assetTagInput = document.querySelector(
+    isMachine ? "#machine_asset_tagInput" : "#monitor_asset_tagInput"
+  );
+
+  if (!assetTagInput) return; // Exit if input field doesn’t exist
+
+  // Check if required fields are filled
+  if (
+    !companyInput ||
+    !deviceTypeSelect ||
+    !dateOfPurchaseInput ||
+    !serialInput
+  ) {
+    assetTagInput.value = "N/A"; // Set to N/A if incomplete
+    return;
+  }
+
+  // Get financial year
+  const financialYear = getFinancialYear(dateOfPurchaseInput);
+  if (!financialYear) {
+    assetTagInput.value = "N/A"; // Invalid date
+    return;
+  }
+
+  // Determine the device type for counter fetching
+  const counterDeviceType = isMachine
+    ? ["Desktop", "Workstation"].includes(deviceTypeSelect)
+      ? "Laptop"
+      : deviceTypeSelect
+    : "Monitor";
+
+  // Fetch the last counter
+  const lastCounter = await fetchLastCounter(
+    companyInput,
+    counterDeviceType,
+    isMachine
+  );
+  const newCounter = lastCounter + 1;
+
+  // Construct the full asset tag with SN
+  const assetTag = `${companyInput}/${deviceTypeSelect}/${financialYear}/${newCounter} SN:${serialInput}`;
+
+  // Display the full tag
+  assetTagInput.value = assetTag;
 }
 
 // Helper function to calculate the width of text
@@ -833,6 +929,81 @@ document.addEventListener("DOMContentLoaded", function () {
     console.error("Sidebar element not found in the DOM");
   }
 
+  // --- NEW FIELD CONFIGURATIONS ---
+  const commonFields = [
+    "sr_no",
+    "user_name",
+    "department",
+    "location",
+    "make",
+    "date_of_issue",
+    "date_of_expiry",
+    "OS",
+    "processor",
+    "RAM",
+    "hard_disk",
+    "keyboard",
+    "accessories",
+    "vendor",
+    "status",
+    "company",
+    "invoice_number",
+    "invoice_file",
+    "remarks",
+  ];
+
+  const machineSpecificFields = [
+    "serial_number",
+    "machine_asset_tag",
+    "model",
+    "machine_asset_no",
+    "machine_date_of_purchase",
+    "laptop_type",
+  ];
+
+  const monitorSpecificFields = [
+    "monitor_serial",
+    "monitor_asset_tag",
+    "monitor_model",
+    "monitor_asset_no",
+    "monitor_date_of_purchase",
+  ];
+
+  // Define the desired order of fields for rendering
+  const orderedFields = [
+    "sr_no",
+    "user_name",
+    "department",
+    "device_type",
+    "serial_number", // Used for machine
+    "monitor_serial", // Used for monitor
+    "make",
+    "model", // Used for machine
+    "monitor_model", // Used for monitor
+    "machine_date_of_purchase", // Machine Date of Purchase
+    "monitor_date_of_purchase", // Monitor Date of Purchase
+    "company",
+    "machine_asset_tag", // Machine Asset Tag
+    "monitor_asset_tag", // Monitor Asset Tag
+    "location",
+    "date_of_issue",
+    "date_of_expiry",
+    "operating_system",
+    "processor",
+    "RAM",
+    "hard_disk",
+    "keyboard",
+    "accessories",
+    "vendor",
+    "machine_asset_no", // Machine Asset No
+    "monitor_asset_no", // Monitor Asset No
+    "laptop_type",
+    "status",
+    "invoice_number",
+    "invoice_file",
+    "remarks",
+  ];
+
   // Logic for save-asset.html
   const tableTypeFilter = document.getElementById("tableTypeFilter");
   const formContainer = document.getElementById("formContainer");
@@ -890,7 +1061,9 @@ document.addEventListener("DOMContentLoaded", function () {
       try {
         const response = await fetch(
           `${BACKEND_URL}/fetchColumns/${tableType}`,
-          { credentials: "include" }
+          {
+            credentials: "include",
+          }
         );
         if (!response.ok) {
           const errorText = await response.text();
@@ -898,27 +1071,77 @@ document.addEventListener("DOMContentLoaded", function () {
             `Failed to fetch columns: ${response.status} - ${errorText}`
           );
         }
-        const { columns } = await response.json();
-        const excludedFields = [
-          "create_user",
-          "create_time",
-          "create_date",
-          "change_user",
-          "change_time",
-          "change_date",
-        ];
-        const displayColumns = columns.filter(
-          (col) => !excludedFields.includes(col)
-        );
-
-        formContainer.innerHTML = "";
+        const { columns: backendColumns } = await response.json();
         const nonRequiredFields = nonRequiredFieldsMap[tableType] || [];
         const lastSrNo = await fetchLastSrNo(tableType);
         const nextSrNo = lastSrNo + 1;
 
-        displayColumns.forEach((column) => {
+        formContainer.innerHTML = "";
+
+        const backendColumnSet = new Set(backendColumns);
+        const fieldsToRender =
+          tableType.toLowerCase() === "systems"
+            ? orderedFields
+            : backendColumns.filter(
+                (col) =>
+                  ![
+                    "create_user",
+                    "create_time",
+                    "create_date",
+                    "change_user",
+                    "change_time",
+                    "change_date",
+                  ].includes(col)
+              );
+
+        if (tableType.toLowerCase() === "systems") {
+          const deviceTypeDiv = document.createElement("div");
+          deviceTypeDiv.className = "form-group";
+          deviceTypeDiv.id = "deviceTypeGroup";
+
+          const deviceTypeLabel = document.createElement("label");
+          deviceTypeLabel.htmlFor = "deviceTypeInput";
+          deviceTypeLabel.textContent = "Device Type";
+
+          const deviceTypeSelect = document.createElement("select");
+          deviceTypeSelect.id = "deviceTypeInput";
+          deviceTypeSelect.name = "device_type";
+          deviceTypeSelect.required = true;
+
+          const options = [
+            { value: "Laptop", text: "Laptop", default: true },
+            { value: "Monitor", text: "Monitor" },
+            { value: "Desktop", text: "Desktop (Laptop + Monitor)" },
+            { value: "Workstation", text: "Workstation (Laptop + Monitor)" },
+            { value: "All-in-one", text: "All-in-one" },
+          ];
+
+          options.forEach((option) => {
+            const optElement = document.createElement("option");
+            optElement.value = option.value;
+            optElement.textContent = option.text;
+            if (option.default) optElement.selected = true;
+            deviceTypeSelect.appendChild(optElement);
+          });
+
+          deviceTypeDiv.appendChild(deviceTypeLabel);
+          deviceTypeDiv.appendChild(deviceTypeSelect);
+          formContainer.appendChild(deviceTypeDiv);
+
+          deviceTypeSelect.addEventListener("change", function () {
+            updateFieldVisibility(this.value);
+            // Trigger asset tag generation for both machine and monitor
+            generateAssetTag(this.value, true);
+            generateAssetTag(this.value, false);
+          });
+        }
+
+        fieldsToRender.forEach((column) => {
+          if (column === "device_type") return;
+
           const div = document.createElement("div");
           div.className = "form-group";
+          div.id = `${column}Group`;
 
           const label = document.createElement("label");
           label.htmlFor = `${column}Input`;
@@ -931,9 +1154,6 @@ document.addEventListener("DOMContentLoaded", function () {
             input.id = `${column}Input`;
             input.name = column;
             input.accept = "application/pdf";
-            if (!nonRequiredFields.includes(column)) {
-              input.required = true;
-            }
           } else if (column === "sr_no") {
             input = document.createElement("input");
             input.type = "number";
@@ -941,24 +1161,88 @@ document.addEventListener("DOMContentLoaded", function () {
             input.name = column;
             input.value = nextSrNo;
             input.readOnly = true;
-            if (!nonRequiredFields.includes(column)) {
-              input.required = true;
-            }
-          } else {
+          } else if (
+            column.includes("date_of") ||
+            column.includes("_date_of_purchase")
+          ) {
             input = document.createElement("input");
-            input.type = column.includes("date") ? "date" : "text";
+            input.type = "date";
             input.id = `${column}Input`;
             input.name = column;
-            if (!nonRequiredFields.includes(column)) {
-              input.required = true;
-            }
+          } else if (column === "status") {
+            input = document.createElement("select");
+            input.id = `${column}Input`;
+            input.name = column;
+            const statusOptions = ["Active", "Inactive", "Repair", "Scrapped"];
+            statusOptions.forEach((optionText) => {
+              const opt = document.createElement("option");
+              opt.value = optionText;
+              opt.textContent = optionText;
+              input.appendChild(opt);
+            });
+          } else {
+            input = document.createElement("input");
+            input.type = "text";
+            input.id = `${column}Input`;
+            input.name = column;
           }
-          formButtonContainer.style.display = "block";
+
+          if (!nonRequiredFields.includes(column)) {
+            input.required = true;
+          } else {
+            input.required = false;
+          }
+
+          // Handle asset tag fields
+          if (
+            column === "machine_asset_tag" ||
+            column === "monitor_asset_tag"
+          ) {
+            input.readOnly = true;
+            input.value = "N/A";
+          }
+
+          // Add event listeners for asset tag generation
+          if (
+            column === "company" ||
+            column === "serial_number" ||
+            column === "monitor_serial" ||
+            column === "machine_date_of_purchase" ||
+            column === "monitor_date_of_purchase"
+          ) {
+            input.addEventListener("input", () => {
+              if (
+                column === "company" ||
+                column === "serial_number" ||
+                column === "machine_date_of_purchase"
+              ) {
+                generateAssetTag(
+                  document.getElementById("deviceTypeInput")?.value,
+                  true
+                );
+              }
+              if (
+                column === "company" ||
+                column === "monitor_serial" ||
+                column === "monitor_date_of_purchase"
+              ) {
+                generateAssetTag(
+                  document.getElementById("deviceTypeInput")?.value,
+                  false
+                );
+              }
+            });
+          }
 
           div.appendChild(label);
           div.appendChild(input);
           formContainer.appendChild(div);
         });
+
+        if (tableType.toLowerCase() === "systems") {
+          updateFieldVisibility("Laptop");
+        }
+        formButtonContainer.style.display = "block";
       } catch (error) {
         console.error(
           `Error fetching columns for ${tableType}:`,
@@ -972,6 +1256,121 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     }
 
+    // Function to update field visibility based on device type
+    function updateFieldVisibility(deviceType) {
+      const isLaptop = deviceType === "Laptop" || deviceType === "All-in-one";
+      const isMonitor = deviceType === "Monitor";
+      const isBoth = deviceType === "Desktop" || deviceType === "Workstation";
+
+      const allToggleableFields = [
+        ...commonFields.filter(
+          (f) =>
+            ![
+              "sr_no",
+              "user_name",
+              "department",
+              "company",
+              "location",
+              "vendor",
+              "status",
+              "invoice_number",
+              "invoice_file",
+              "remarks",
+            ].includes(f)
+        ),
+        ...machineSpecificFields,
+        ...monitorSpecificFields,
+      ];
+
+      allToggleableFields.forEach((field) => {
+        const fieldGroup = document.getElementById(`${field}Group`);
+        const inputElement = document.getElementById(`${field}Input`);
+
+        if (fieldGroup && inputElement) {
+          let shouldBeVisible = false;
+          let shouldBeRequired = false;
+          let defaultValue = "";
+
+          if (
+            commonFields.includes(field) &&
+            ![
+              "sr_no",
+              "user_name",
+              "department",
+              "company",
+              "location",
+              "vendor",
+              "status",
+              "invoice_number",
+              "invoice_file",
+              "remarks",
+            ].includes(field)
+          ) {
+            shouldBeVisible = true;
+            shouldBeRequired = !nonRequiredFieldsMap["systems"].includes(field);
+          }
+
+          if (machineSpecificFields.includes(field)) {
+            if (isLaptop || isBoth) {
+              shouldBeVisible = true;
+              shouldBeRequired =
+                !nonRequiredFieldsMap["systems"].includes(field);
+            } else {
+              defaultValue = field === "machine_date_of_purchase" ? "" : "N/A";
+            }
+          }
+
+          if (monitorSpecificFields.includes(field)) {
+            if (isMonitor || isBoth) {
+              shouldBeVisible = true;
+              shouldBeRequired =
+                !nonRequiredFieldsMap["systems"].includes(field);
+            } else {
+              defaultValue = field === "monitor_date_of_purchase" ? "" : "N/A";
+            }
+          }
+
+          fieldGroup.style.display = shouldBeVisible ? "block" : "none";
+          inputElement.required = shouldBeRequired;
+
+          if (
+            !shouldBeVisible &&
+            (inputElement.type === "text" || inputElement.type === "date")
+          ) {
+            inputElement.value = defaultValue;
+          } else if (
+            shouldBeVisible &&
+            inputElement.value === "N/A" &&
+            inputElement.type !== "date"
+          ) {
+            inputElement.value = "";
+          }
+        }
+      });
+
+      const alwaysVisibleFields = [
+        "sr_no",
+        "user_name",
+        "department",
+        "company",
+        "location",
+        "vendor",
+        "status",
+        "invoice_number",
+        "invoice_file",
+        "remarks",
+      ];
+      alwaysVisibleFields.forEach((field) => {
+        const fieldGroup = document.getElementById(`${field}Group`);
+        const inputElement = document.getElementById(`${field}Input`);
+        if (fieldGroup && inputElement) {
+          fieldGroup.style.display = "block";
+          inputElement.required =
+            !nonRequiredFieldsMap["systems"].includes(field);
+        }
+      });
+    }
+
     tableTypeFilter.value = "systems";
     fetchColumnsForTableType("systems");
 
@@ -980,6 +1379,7 @@ document.addEventListener("DOMContentLoaded", function () {
       await fetchColumnsForTableType(tableType);
     });
 
+    // Asset form submission
     assetForm.addEventListener("submit", async function (e) {
       e.preventDefault();
       const tableType = tableTypeFilter.value;
@@ -988,13 +1388,73 @@ document.addEventListener("DOMContentLoaded", function () {
         return;
       }
 
+      const deviceType =
+        document.getElementById("deviceTypeInput")?.value || "";
       const formData = new FormData(this);
-      formData.append("tableType", tableType);
+      const processedFormData = new FormData();
+      processedFormData.append("tableType", tableType);
+      processedFormData.append("device_type", deviceType);
+
+      const dateFields = [
+        "machine_date_of_purchase",
+        "monitor_date_of_purchase",
+        "date_of_issue",
+        "date_of_expiry",
+      ];
+
+      for (const [key, value] of formData.entries()) {
+        if (dateFields.includes(key)) {
+          if (!value || value === "" || value === "N/A") {
+            processedFormData.append(key, "");
+          } else {
+            const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+            if (!datePattern.test(value)) {
+              showErrorMessage(
+                `Invalid date format for ${formatColumnName(
+                  key
+                )}. Expected YYYY-MM-DD.`,
+                messageContainer
+              );
+              return;
+            }
+            processedFormData.append(key, value);
+          }
+        } else if (value instanceof File && value.size === 0) {
+          continue;
+        } else {
+          processedFormData.append(key, value);
+        }
+      }
+
+      if (tableType.toLowerCase() === "systems") {
+        const isLaptop = deviceType === "Laptop" || deviceType === "All-in-one";
+        const isMonitor = deviceType === "Monitor";
+        const isBoth = deviceType === "Desktop" || deviceType === "Workstation";
+
+        if (isLaptop) {
+          processedFormData.append("monitor_date_of_purchase", "");
+          processedFormData.set("monitor_serial", "0");
+          processedFormData.set("monitor_model", "");
+          processedFormData.set("monitor_asset_tag", "");
+          processedFormData.append("monitor_asset_no", "");
+        } else if (isMonitor) {
+          processedFormData.append("machine_date_of_purchase", "");
+          processedFormData.set("serial_number", "0");
+          processedFormData.set("model", "");
+          processedFormData.set("machine_asset_tag", "");
+          processedFormData.append("machine_asset_no", "");
+        }
+      }
+
+      console.log("Processed FormData:");
+      for (const [key, value] of processedFormData.entries()) {
+        console.log(`${key}: ${value}`);
+      }
 
       try {
         const response = await fetch(`${BACKEND_URL}/assets`, {
           method: "POST",
-          body: formData,
+          body: processedFormData,
           credentials: "include",
         });
 
@@ -1529,6 +1989,7 @@ document.addEventListener("DOMContentLoaded", function () {
     console.log("Showing item details in modal:", item);
     const modal = document.getElementById("assetDetailModal");
     const modalContent = document.getElementById("assetDetailContent");
+    const modalActions = modal.querySelector(".modal-actions");
 
     const excludedFields = [
       "create_user",
@@ -1539,257 +2000,313 @@ document.addEventListener("DOMContentLoaded", function () {
       "change_date",
     ];
 
-    if (modal && modalContent) {
-      modalContent.innerHTML = "";
-      const originalValues = { ...item };
+    if (!modal || !modalContent || !modalActions) {
+      console.error("Modal elements not found:", {
+        modal,
+        modalContent,
+        modalActions,
+      });
+      return;
+    }
 
-      for (const [key, value] of Object.entries(item)) {
-        if (!excludedFields.includes(key)) {
-          const formattedKey = formatColumnName(key);
-          const p = document.createElement("p");
-          let displayValue = value;
+    // Clear existing content and reset modal state
+    modalContent.innerHTML = "";
+    modal.dataset.item = JSON.stringify(item);
+    const originalValues = { ...item };
 
-          if (key.toLowerCase().includes("date")) {
-            displayValue = formatDateForDisplay(value);
-          }
+    // Populate modal content
+    for (const [key, value] of Object.entries(item)) {
+      if (!excludedFields.includes(key)) {
+        const formattedKey = formatColumnName(key);
+        const p = document.createElement("p");
+        let displayValue = value;
 
-          if (key === "invoice_file" && value) {
-            const link = document.createElement("a");
-            link.href = `${BACKEND_URL}/${value}`;
-            link.textContent = "View Invoice";
-            link.target = "_blank";
-            link.style.color = "#00ffcc";
-            link.style.textDecoration = "underline";
-            p.innerHTML = `<strong>${formattedKey}:</strong> `;
-            p.appendChild(link);
-          } else {
-            p.innerHTML = `<strong>${formattedKey}:</strong> <span class="editable-field" data-field="${key}">${
-              displayValue || ""
-            }</span>`;
-          }
-          modalContent.appendChild(p);
+        if (key.toLowerCase().includes("date")) {
+          displayValue = formatDateForDisplay(value);
         }
+
+        if (key === "invoice_file" && value) {
+          const link = document.createElement("a");
+          link.href = `${BACKEND_URL}/${value}`;
+          link.textContent = "View Invoice";
+          link.target = "_blank";
+          link.style.color = "#00ffcc";
+          link.style.textDecoration = "underline";
+          p.innerHTML = `<strong>${formattedKey}:</strong> `;
+          p.appendChild(link);
+        } else {
+          p.innerHTML = `<strong>${formattedKey}:</strong> <span class="editable-field" data-field="${key}">${
+            displayValue || ""
+          }</span>`;
+        }
+        modalContent.appendChild(p);
+      }
+    }
+
+    // Add "Generate Form" button only for "systems" table type
+    if (currentTableType.toLowerCase() === "systems") {
+      let generateFormBtn = modalActions.querySelector("#generateFormBtn");
+      if (generateFormBtn) {
+        generateFormBtn.remove();
       }
 
-      // Add "Generate Form" button only for "systems" table type
-      if (currentTableType.toLowerCase() === "systems") {
-        const modalActions = modal.querySelector(".modal-actions");
-        if (modalActions) {
-          // Remove any existing "Generate Form" button to prevent duplicates
-          const existingGenerateFormBtn =
-            modalActions.querySelector("#generateFormBtn");
-          if (existingGenerateFormBtn) {
-            existingGenerateFormBtn.remove();
+      generateFormBtn = document.createElement("button");
+      generateFormBtn.className = "action-btn generate-form";
+      generateFormBtn.id = "generateFormBtn";
+      generateFormBtn.textContent = "Generate Form";
+      generateFormBtn.style.display = "inline-block";
+      generateFormBtn.addEventListener("click", () => {
+        generateSystemAllocationForm(item);
+      });
+
+      const editBtn = modalActions.querySelector("#editAssetBtn");
+      if (editBtn) {
+        editBtn.insertAdjacentElement("afterend", generateFormBtn);
+      } else {
+        modalActions.appendChild(generateFormBtn);
+      }
+    }
+
+    modal.style.display = "block";
+
+    // Handle modal close
+    const closeBtn = modal.querySelector(".close-btn");
+    if (closeBtn) {
+      const newCloseBtn = closeBtn.cloneNode(true);
+      closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
+      newCloseBtn.addEventListener("click", () => {
+        modal.style.display = "none";
+        const editBtn = document.getElementById("editAssetBtn");
+        const saveBtn = document.getElementById("saveAssetBtn");
+        const generateFormBtn = document.getElementById("generateFormBtn");
+        if (editBtn && saveBtn) {
+          editBtn.style.display = "inline-block";
+          saveBtn.style.display = "none";
+          if (generateFormBtn) {
+            generateFormBtn.style.display = "inline-block";
           }
+        }
+      });
+    }
 
-          // Create new "Generate Form" button
-          const generateFormBtn = document.createElement("button");
-          generateFormBtn.className = "action-btn generate-form";
-          generateFormBtn.id = "generateFormBtn";
-          generateFormBtn.textContent = "Generate Form";
-          generateFormBtn.addEventListener("click", () => {
-            generateSystemAllocationForm(item);
-          });
-
-          // Insert "Generate Form" button after the edit button
-          const editBtn = modalActions.querySelector("#editAssetBtn");
-          if (editBtn) {
-            editBtn.insertAdjacentElement("afterend", generateFormBtn);
-          } else {
-            modalActions.appendChild(generateFormBtn);
+    // Handle window click to close modal
+    const windowClickListener = (e) => {
+      if (e.target === modal) {
+        modal.style.display = "none";
+        const editBtn = document.getElementById("editAssetBtn");
+        const saveBtn = document.getElementById("saveAssetBtn");
+        const generateFormBtn = document.getElementById("generateFormBtn");
+        if (editBtn && saveBtn) {
+          editBtn.style.display = "inline-block";
+          saveBtn.style.display = "none";
+          if (generateFormBtn) {
+            generateFormBtn.style.display = "inline-block";
           }
         }
       }
+    };
+    window.removeEventListener("click", windowClickListener);
+    window.addEventListener("click", windowClickListener);
 
-      modal.dataset.item = JSON.stringify(item);
-      modal.style.display = "block";
+    // Setup edit and save buttons
+    const editBtn = document.getElementById("editAssetBtn");
+    const saveBtn = document.getElementById("saveAssetBtn");
+    const generateFormBtn = document.getElementById("generateFormBtn");
 
-      const closeBtn = modal.querySelector(".close-btn");
-      if (closeBtn) {
-        const newCloseBtn = closeBtn.cloneNode(true);
-        closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
-        newCloseBtn.addEventListener("click", () => {
-          modal.style.display = "none";
-          const editBtn = document.getElementById("editAssetBtn");
-          const saveBtn = document.getElementById("saveAssetBtn");
-          if (editBtn && saveBtn) {
-            editBtn.style.display = "inline-block";
-            saveBtn.style.display = "none";
+    if (editBtn && saveBtn) {
+      // Reset button states
+      editBtn.style.display = "inline-block";
+      saveBtn.style.display = "none";
+
+      // Remove existing listeners by cloning buttons
+      const newEditBtn = editBtn.cloneNode(true);
+      const newSaveBtn = saveBtn.cloneNode(true);
+      editBtn.parentNode.replaceChild(newEditBtn, editBtn);
+      saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
+
+      const updatedEditBtn = document.getElementById("editAssetBtn");
+      const updatedSaveBtn = document.getElementById("saveAssetBtn");
+
+      updatedEditBtn.addEventListener("click", () => {
+        console.log("Edit button clicked");
+        const editableFields = modalContent.querySelectorAll(".editable-field");
+        const primaryKeyFields =
+          primaryKeyFieldsMap[currentTableType.toLowerCase()] || [];
+
+        // Clear any existing inputs
+        modalContent
+          .querySelectorAll(".edit-input")
+          .forEach((input) => input.remove());
+
+        editableFields.forEach((field) => {
+          const fieldName = field.dataset.field;
+          if (
+            !excludedFields.includes(fieldName) &&
+            !primaryKeyFields.includes(fieldName)
+          ) {
+            const input = document.createElement("input");
+            input.type =
+              fieldName.includes("date") || fieldName.includes("Date")
+                ? "date"
+                : fieldName.includes("price") || fieldName.includes("cost")
+                ? "number"
+                : "text";
+            input.className = "edit-input";
+            input.value = fieldName.toLowerCase().includes("date")
+              ? field.textContent
+              : field.textContent;
+            input.dataset.field = fieldName;
+            field.style.display = "none";
+            field.parentElement.appendChild(input);
           }
         });
-      }
-
-      const existingWindowListener = (e) => {
-        if (e.target === modal) {
-          modal.style.display = "none";
-          const editBtn = document.getElementById("editAssetBtn");
-          const saveBtn = document.getElementById("saveAssetBtn");
-          if (editBtn && saveBtn) {
-            editBtn.style.display = "inline-block";
-            saveBtn.style.display = "none";
-          }
+        updatedEditBtn.style.display = "none";
+        updatedSaveBtn.style.display = "inline-block";
+        if (generateFormBtn) {
+          generateFormBtn.style.display = "none";
         }
-      };
-      window.removeEventListener("click", existingWindowListener);
-      window.addEventListener("click", existingWindowListener);
+      });
 
-      const editBtn = document.getElementById("editAssetBtn");
-      const saveBtn = document.getElementById("saveAssetBtn");
-      if (editBtn && saveBtn) {
-        editBtn.style.display = "inline-block";
-        saveBtn.style.display = "none";
+      updatedSaveBtn.addEventListener("click", async () => {
+        console.log("Save button clicked");
+        const updatedItem = JSON.parse(modal.dataset.item);
+        const inputs = modalContent.querySelectorAll(".edit-input");
+        const updates = {};
+        let hasChanges = false;
 
-        const newEditBtn = editBtn.cloneNode(true);
-        const newSaveBtn = saveBtn.cloneNode(true);
-        editBtn.parentNode.replaceChild(newEditBtn, editBtn);
-        saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
+        inputs.forEach((input) => {
+          const fieldName = input.dataset.field;
+          let newValue = input.value;
+          const originalValue = (originalValues[fieldName] || "").toString();
 
-        const updatedEditBtn = document.getElementById("editAssetBtn");
-        const updatedSaveBtn = document.getElementById("saveAssetBtn");
-
-        updatedEditBtn.addEventListener("click", () => {
-          const editableFields =
-            modalContent.querySelectorAll(".editable-field");
-          const primaryKeyFields =
-            primaryKeyFieldsMap[currentTableType.toLowerCase()] || [];
-
-          editableFields.forEach((field) => {
-            const fieldName = field.dataset.field;
-            if (
-              !excludedFields.includes(fieldName) &&
-              !primaryKeyFields.includes(fieldName)
-            ) {
-              const input = document.createElement("input");
-              input.type =
-                fieldName.includes("date") || fieldName.includes("Date")
-                  ? "date"
-                  : fieldName.includes("price") || fieldName.includes("cost")
-                  ? "number"
-                  : "text";
-              input.className = "edit-input";
-              input.value = fieldName.toLowerCase().includes("date")
-                ? field.textContent
-                : field.textContent;
-              input.dataset.field = fieldName;
-              field.style.display = "none";
-              field.parentElement.appendChild(input);
-            }
-          });
-          updatedEditBtn.style.display = "none";
-          updatedSaveBtn.style.display = "inline-block";
-        });
-
-        updatedSaveBtn.addEventListener("click", async () => {
-          const updatedItem = JSON.parse(modal.dataset.item);
-          const inputs = modalContent.querySelectorAll(".edit-input");
-          const updates = {};
-          let hasChanges = false;
-
-          inputs.forEach((input) => {
-            const fieldName = input.dataset.field;
-            let newValue = input.value;
-            const originalValue = (originalValues[fieldName] || "").toString();
-
-            if (fieldName.toLowerCase().includes("date")) {
-              if (newValue) {
-                const datePattern = /^\d{4}-\d{2}-\d{2}$/;
-                if (!datePattern.test(newValue)) {
-                  showErrorMessage(
-                    `Invalid date format for ${fieldName}. Expected YYYY-MM-DD.`,
-                    modalContent
-                  );
-                  return;
-                }
+          // Handle date fields
+          if (fieldName.toLowerCase().includes("date")) {
+            if (!newValue) {
+              newValue = "N/A"; // Set empty dates to "N/A"
+            } else if (newValue) {
+              const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+              if (!datePattern.test(newValue)) {
+                showErrorMessage(
+                  `Invalid date format for ${fieldName}. Expected YYYY-MM-DD.`,
+                  modalContent
+                );
+                return;
               }
             }
+          }
 
-            const normalizedNewValue = fieldName.toLowerCase().includes("date")
-              ? normalizeDateForComparison(newValue)
-              : (newValue || "").toString();
-            const normalizedOriginalValue = fieldName
-              .toLowerCase()
-              .includes("date")
-              ? normalizeDateForComparison(originalValue)
-              : originalValue;
+          const normalizedNewValue = fieldName.toLowerCase().includes("date")
+            ? normalizeDateForComparison(newValue)
+            : (newValue || "").toString();
+          const normalizedOriginalValue = fieldName
+            .toLowerCase()
+            .includes("date")
+            ? normalizeDateForComparison(originalValue)
+            : originalValue;
 
-            const fieldSpan = modalContent.querySelector(
-              `.editable-field[data-field="${fieldName}"]`
-            );
+          const fieldSpan = modalContent.querySelector(
+            `.editable-field[data-field="${fieldName}"]`
+          );
+          if (fieldSpan) {
             fieldSpan.textContent = newValue;
             fieldSpan.style.display = "inline";
             input.remove();
-
-            if (normalizedNewValue !== normalizedOriginalValue) {
-              updates[fieldName] = newValue;
-              hasChanges = true;
-            }
-          });
-
-          if (!hasChanges) {
-            updatedEditBtn.style.display = "inline-block";
-            updatedSaveBtn.style.display = "none";
-            return;
           }
 
-          Object.assign(updatedItem, updates);
-
-          try {
-            const response = await fetch(`${BACKEND_URL}/assets/updateByKey`, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                tableType: currentTableType,
-                key: {
-                  sr_no: updatedItem.sr_no,
-                  monitor_asset_tag: updatedItem.monitor_asset_tag || null,
-                  machine_asset_tag: updatedItem.machine_asset_tag || null,
-                  asset_tag: updatedItem.asset_tag || null,
-                },
-                updates: updates,
-              }),
-              credentials: "include",
-            });
-
-            if (!response.ok) throw new Error("Failed to update asset");
-
-            showSuccessMessage("Asset updated successfully!", modalContent);
-
-            const index = allAssets.findIndex((asset) => {
-              const matchesSrNo = asset.sr_no === updatedItem.sr_no;
-              const matchesMonitorTag =
-                asset.monitor_asset_tag ===
-                (updatedItem.monitor_asset_tag || null);
-              const matchesMachineTag =
-                asset.machine_asset_tag ===
-                (updatedItem.machine_asset_tag || null);
-              const matchesAssetTag =
-                asset.asset_tag === (updatedItem.asset_tag || null);
-              if (currentTableType.toLowerCase() === "systems") {
-                return matchesSrNo && matchesMonitorTag && matchesMachineTag;
-              }
-              return matchesSrNo && matchesAssetTag;
-            });
-
-            if (index !== -1) {
-              allAssets[index] = updatedItem;
-            }
-
-            const filteredData = applyFiltersAndSearch(allAssets);
-            renderTable(filteredData);
-
-            updatedEditBtn.style.display = "inline-block";
-            updatedSaveBtn.style.display = "none";
-          } catch (error) {
-            console.error("Error updating asset:", error);
-            showErrorMessage(
-              "Failed to update asset. Please try again.",
-              modalContent
-            );
+          if (normalizedNewValue !== normalizedOriginalValue) {
+            updates[fieldName] = newValue;
+            hasChanges = true;
           }
         });
-      }
+
+        // Exit early if no changes
+        if (!hasChanges) {
+          console.log("No changes detected, reverting to edit mode");
+          updatedEditBtn.style.display = "inline-block";
+          updatedSaveBtn.style.display = "none";
+          if (generateFormBtn) {
+            generateFormBtn.style.display = "inline-block";
+          }
+          return;
+        }
+
+        Object.assign(updatedItem, updates);
+        modal.dataset.item = JSON.stringify(updatedItem); // Update modal dataset
+
+        try {
+          console.log("Sending update request:", {
+            tableType: currentTableType,
+            updates,
+          });
+          const response = await fetch(`${BACKEND_URL}/assets/updateByKey`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              tableType: currentTableType,
+              key: {
+                sr_no: updatedItem.sr_no,
+                monitor_asset_tag: updatedItem.monitor_asset_tag || null,
+                machine_asset_tag: updatedItem.machine_asset_tag || null,
+                asset_tag: updatedItem.asset_tag || null,
+              },
+              updates: updates,
+            }),
+            credentials: "include",
+          });
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(
+              `Failed to update asset: ${response.status} - ${errorText}`
+            );
+          }
+
+          showSuccessMessage("Asset updated successfully!", modalContent);
+
+          // Update allAssets
+          const index = allAssets.findIndex((asset) => {
+            const matchesSrNo = asset.sr_no === updatedItem.sr_no;
+            const matchesMonitorTag =
+              asset.monitor_asset_tag ===
+              (updatedItem.monitor_asset_tag || null);
+            const matchesMachineTag =
+              asset.machine_asset_tag ===
+              (updatedItem.machine_asset_tag || null);
+            const matchesAssetTag =
+              asset.asset_tag === (updatedItem.asset_tag || null);
+            if (currentTableType.toLowerCase() === "systems") {
+              return matchesSrNo && matchesMonitorTag && matchesMachineTag;
+            }
+            return matchesSrNo && matchesAssetTag;
+          });
+
+          if (index !== -1) {
+            allAssets[index] = updatedItem;
+          } else {
+            console.warn("Asset not found in allAssets, pushing new item");
+            allAssets.push(updatedItem);
+          }
+
+          const filteredData = applyFiltersAndSearch(allAssets);
+          renderTable(filteredData);
+
+          updatedEditBtn.style.display = "inline-block";
+          updatedSaveBtn.style.display = "none";
+          if (generateFormBtn) {
+            generateFormBtn.style.display = "inline-block";
+          }
+        } catch (error) {
+          console.error("Error updating asset:", error);
+          showErrorMessage(
+            `Failed to update asset: ${error.message}`,
+            modalContent
+          );
+        }
+      });
+    } else {
+      console.error("Edit or Save button not found");
     }
   }
 
@@ -1798,54 +2315,54 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Store the item data in localStorage to access it on the target page
     try {
-        localStorage.setItem("systemAllocationItem", JSON.stringify(item));
-        console.log("Item data stored in localStorage:", item);
+      localStorage.setItem("systemAllocationItem", JSON.stringify(item));
+      console.log("Item data stored in localStorage:", item);
     } catch (error) {
-        console.error("Error storing item in localStorage:", error);
-        const modalContent = document.getElementById("assetDetailContent");
-        if (modalContent) {
-            showErrorMessage(
-                "Failed to store form data. Please try again.",
-                modalContent
-            );
-        }
-        return;
+      console.error("Error storing item in localStorage:", error);
+      const modalContent = document.getElementById("assetDetailContent");
+      if (modalContent) {
+        showErrorMessage(
+          "Failed to store form data. Please try again.",
+          modalContent
+        );
+      }
+      return;
     }
 
     // Close the modal
     const modal = document.getElementById("assetDetailModal");
     if (modal) {
-        modal.style.display = "none";
+      modal.style.display = "none";
     } else {
-        console.warn("Asset detail modal not found, cannot close modal.");
+      console.warn("Asset detail modal not found, cannot close modal.");
     }
 
     // Open laptop-checklist.html in a new tab
     try {
-        const newTab = window.open("laptop-checklist.html", "_blank");
-        if (!newTab) {
-            console.error("Failed to open new tab. Popup blocker may be enabled.");
-            const modalContent = document.getElementById("assetDetailContent");
-            if (modalContent) {
-                showErrorMessage(
-                    "Failed to open form. Please allow popups and try again.",
-                    modalContent
-                );
-            }
-        } else {
-            console.log("Opened new tab for laptop-checklist.html");
-        }
-    } catch (error) {
-        console.error("Error opening new tab:", error);
+      const newTab = window.open("laptop-checklist.html", "_blank");
+      if (!newTab) {
+        console.error("Failed to open new tab. Popup blocker may be enabled.");
         const modalContent = document.getElementById("assetDetailContent");
         if (modalContent) {
-            showErrorMessage(
-                "Failed to open form page. Please try again.",
-                modalContent
-            );
+          showErrorMessage(
+            "Failed to open form. Please allow popups and try again.",
+            modalContent
+          );
         }
+      } else {
+        console.log("Opened new tab for laptop-checklist.html");
+      }
+    } catch (error) {
+      console.error("Error opening new tab:", error);
+      const modalContent = document.getElementById("assetDetailContent");
+      if (modalContent) {
+        showErrorMessage(
+          "Failed to open form page. Please try again.",
+          modalContent
+        );
+      }
     }
-}
+  }
 
   const exportExcelBtn = document.getElementById("export-excel-btn");
   if (exportExcelBtn) {
@@ -1922,201 +2439,236 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   // Updated logic for laptop-checklist.html: Initialize form functionality with new requirements
-if (window.location.pathname.includes("laptop-checklist.html")) {
-  const issuingContainer = document.querySelector(".issuing-container");
-  const checklistContainer = document.querySelector(".checklist-container");
-  const nextBtn = document.getElementById("nextBtn");
-  const submitBtn = document.getElementById("submitBtn");
-  const issuingForm = document.getElementById("issuingForm");
-  const checklistForm = document.getElementById("checklistForm");
+  if (window.location.pathname.includes("laptop-checklist.html")) {
+    const issuingContainer = document.querySelector(".issuing-container");
+    const checklistContainer = document.querySelector(".checklist-container");
+    const nextBtn = document.getElementById("nextBtn");
+    const submitBtn = document.getElementById("submitBtn");
+    const issuingForm = document.getElementById("issuingForm");
+    const checklistForm = document.getElementById("checklistForm");
 
-  // Create Save, Print, and Back to List buttons dynamically
-  const saveBtn = document.createElement("button");
-  saveBtn.id = "saveBtn";
-  saveBtn.textContent = "Save";
-  saveBtn.style.display = "none";
-  saveBtn.className = "action-btn submit-btn";
+    // Create Save, Print, and Back to List buttons dynamically
+    const saveBtn = document.createElement("button");
+    saveBtn.id = "saveBtn";
+    saveBtn.textContent = "Save";
+    saveBtn.style.display = "none";
+    saveBtn.className = "action-btn submit-btn";
 
-  const printBtn = document.createElement("button");
-  printBtn.id = "printBtn";
-  printBtn.textContent = "Print";
-  printBtn.style.display = "none";
-  printBtn.className = "action-btn print-btn";
+    const printBtn = document.createElement("button");
+    printBtn.id = "printBtn";
+    printBtn.textContent = "Print";
+    printBtn.style.display = "none";
+    printBtn.className = "action-btn print-btn";
 
-  const backBtn = document.createElement("button");
-  backBtn.id = "backBtn";
-  backBtn.textContent = "Back to List";
-  backBtn.style.display = "none";
-  backBtn.className = "action-btn back-btn";
-  backBtn.addEventListener("click", () => {
-    window.location.href = "asset-tracking.html";
-  });
-
-  // Append Save, Print, and Back to List buttons to the checklist form
-  if (checklistForm) {
-    const buttonContainer =
-      checklistForm.querySelector(".form-buttons") ||
-      document.createElement("div");
-    buttonContainer.className = "form-buttons";
-    buttonContainer.appendChild(saveBtn);
-    buttonContainer.appendChild(printBtn);
-    buttonContainer.appendChild(backBtn);
-    checklistForm.appendChild(buttonContainer);
-  }
-
-  if (issuingForm && checklistForm && nextBtn && submitBtn && issuingContainer && checklistContainer)
-  {
-    // Format and set current date for "Issued By / Date" field
-    const currentDate = new Date();
-    const day = currentDate.getDate();
-    const month = currentDate
-      .toLocaleString("default", { month: "short" })
-      .toUpperCase();
-    const year = currentDate.getFullYear();
-    const formattedDate = `${day}-${month}-${year}`;
-    const currentDateElement = document.getElementById("currentDate");
-    if (currentDateElement) {
-      currentDateElement.textContent = formattedDate;
-    }
-
-    // Make specified fields editable, others read-only
-    const editableFields = [
-      "username",
-      "deptName",
-      "dateOfIssue",
-      "accessories",
-    ];
-    const allInputs = issuingForm.querySelectorAll("input");
-    allInputs.forEach((input) => {
-      if (!editableFields.includes(input.id)) {
-        input.setAttribute("readonly", "true");
-      }
+    const backBtn = document.createElement("button");
+    backBtn.id = "backBtn";
+    backBtn.textContent = "Back to List";
+    backBtn.style.display = "none";
+    backBtn.className = "action-btn back-btn";
+    backBtn.addEventListener("click", () => {
+      window.location.href = "asset-tracking.html";
     });
 
-    // Check if we're here to print a record or generate a new form
-    const printSrNo = localStorage.getItem("printSystemAllocationSrNo");
-    const storedItem = localStorage.getItem("systemAllocationItem");
-    let isPrinting = false;
-    let srNo = null;
-    let machineAssetTag = null;
-    let monitorAssetTag = null;
+    // Append Save, Print, and Back to List buttons to the checklist form
+    if (checklistForm) {
+      const buttonContainer =
+        checklistForm.querySelector(".form-buttons") ||
+        document.createElement("div");
+      buttonContainer.className = "form-buttons";
+      buttonContainer.appendChild(saveBtn);
+      buttonContainer.appendChild(printBtn);
+      buttonContainer.appendChild(backBtn);
+      checklistForm.appendChild(buttonContainer);
+    }
 
-    if (printSrNo) {
-      // Handle printing scenario
-      const srNoNum = Number(printSrNo);
-      console.log("Found printSystemAllocationSrNo in localStorage:", srNoNum);
+    if (
+      issuingForm &&
+      checklistForm &&
+      nextBtn &&
+      submitBtn &&
+      issuingContainer &&
+      checklistContainer
+    ) {
+      // Format and set current date for "Issued By / Date" field
+      const currentDate = new Date();
+      const day = currentDate.getDate();
+      const month = currentDate
+        .toLocaleString("default", { month: "short" })
+        .toUpperCase();
+      const year = currentDate.getFullYear();
+      const formattedDate = `${day}-${month}-${year}`;
+      const currentDateElement = document.getElementById("currentDate");
+      if (currentDateElement) {
+        currentDateElement.textContent = formattedDate;
+      }
 
-      // Find the record in the records array
-      const record = records.find((r) => r.srNo === srNoNum);
-      if (record) {
-        console.log("Record found for printing:", record);
-        // Populate issuing form with mapped fields
-        document.getElementById("username").value = record.username || "";
-        document.getElementById("deptName").value = record.deptName || "";
-        document.getElementById("dateOfIssue").value = record.dateOfIssue || "";
-        document.getElementById("laptop").value = record.laptop || "";
-        document.getElementById("serialNo").value = record.serialNo || "";
-        document.getElementById("configuration").value = record.configuration || "";
-        document.getElementById("accessories").value = record.accessories || "";
-        document.getElementById("assetTag").value = record.assetTag || "";
-        document.getElementById("issuedPerson").value = record.issuedPerson || "";
-
-        // Populate checklist form
-        document.getElementById("systemName").value =
-          record.checklist.systemName || "";
-        for (let i = 1; i <= 32; i++) {
-          const statusElement = document.querySelector(
-            `select[name="status${i}"]`
-          );
-          if (statusElement) {
-            statusElement.value =
-              record.checklist.statuses[`status${i}`] || "N/A";
-          }
+      // Make specified fields editable, others read-only
+      const editableFields = [
+        "username",
+        "deptName",
+        "dateOfIssue",
+        "accessories",
+      ];
+      const allInputs = issuingForm.querySelectorAll("input");
+      allInputs.forEach((input) => {
+        if (!editableFields.includes(input.id)) {
+          input.setAttribute("readonly", "true");
         }
-        syncChecklistFields();
+      });
 
-        // Show both forms for printing
-        issuingContainer.classList.add("active");
-        checklistContainer.classList.add("active");
-        checklistContainer.style.display = "block";
-        nextBtn.style.display = "none";
-        saveBtn.style.display = "none";
-        printBtn.style.display = "none";
-        backBtn.style.display = "none";
+      // Check if we're here to print a record or generate a new form
+      const printSrNo = localStorage.getItem("printSystemAllocationSrNo");
+      const storedItem = localStorage.getItem("systemAllocationItem");
+      let isPrinting = false;
+      let srNo = null;
+      let machineAssetTag = null;
+      let monitorAssetTag = null;
 
-        // Hide other buttons to prevent interaction during printing
-        document
-          .querySelectorAll("button:not(#submitBtn)")
-          .forEach((btn) => (btn.style.display = "none"));
+      if (printSrNo) {
+        // Handle printing scenario
+        const srNoNum = Number(printSrNo);
+        console.log(
+          "Found printSystemAllocationSrNo in localStorage:",
+          srNoNum
+        );
 
-        // Trigger print after a short delay to ensure DOM updates
-        setTimeout(() => {
-          window.print();
-          // Restore visibility after printing
+        // Find the record in the records array
+        const record = records.find((r) => r.srNo === srNoNum);
+        if (record) {
+          console.log("Record found for printing:", record);
+          // Populate issuing form with mapped fields
+          document.getElementById("username").value = record.username || "";
+          document.getElementById("deptName").value = record.deptName || "";
+          document.getElementById("dateOfIssue").value =
+            record.dateOfIssue || "";
+          document.getElementById("laptop").value = record.laptop || "";
+          document.getElementById("serialNo").value = record.serialNo || "";
+          document.getElementById("configuration").value =
+            record.configuration || "";
+          document.getElementById("accessories").value =
+            record.accessories || "";
+          document.getElementById("assetTag").value = record.assetTag || "";
+          document.getElementById("issuedPerson").value =
+            record.issuedPerson || "";
+
+          // Populate checklist form
+          document.getElementById("systemName").value =
+            record.checklist.systemName || "";
+          for (let i = 1; i <= 32; i++) {
+            const statusElement = document.querySelector(
+              `select[name="status${i}"]`
+            );
+            if (statusElement) {
+              statusElement.value =
+                record.checklist.statuses[`status${i}`] || "N/A";
+            }
+          }
+          syncChecklistFields();
+
+          // Show both forms for printing
+          issuingContainer.classList.add("active");
+          checklistContainer.classList.add("active");
+          checklistContainer.style.display = "block";
+          nextBtn.style.display = "none";
+          saveBtn.style.display = "none";
+          printBtn.style.display = "none";
+          backBtn.style.display = "none";
+
+          // Hide other buttons to prevent interaction during printing
           document
-            .querySelectorAll("button")
-            .forEach((btn) => (btn.style.display = "inline-block"));
+            .querySelectorAll("button:not(#submitBtn)")
+            .forEach((btn) => (btn.style.display = "none"));
+
+          // Trigger print after a short delay to ensure DOM updates
+          setTimeout(() => {
+            window.print();
+            // Restore visibility after printing
+            document
+              .querySelectorAll("button")
+              .forEach((btn) => (btn.style.display = "inline-block"));
+            checklistContainer.style.display = "none";
+            nextBtn.style.display = "block";
+            saveBtn.style.display = "none";
+            printBtn.style.display = "none";
+            backBtn.style.display = "none";
+          }, 500);
+
+          isPrinting = true;
+        } else {
+          console.error(
+            `No record found for srNo: ${srNoNum} in records array:`,
+            records
+          );
+        }
+
+        // Clean up: Remove the printSrNo from localStorage
+        localStorage.removeItem("printSystemAllocationSrNo");
+        console.log("Cleared printSystemAllocationSrNo from localStorage");
+      } else if (storedItem) {
+        // Handle form generation scenario
+        try {
+          const item = JSON.parse(storedItem);
+          console.log(
+            "Retrieved item from localStorage for form generation:",
+            item
+          );
+
+          // Store keys for updating the record
+          srNo = item.sr_no || null;
+          machineAssetTag = item.machine_asset_tag || null;
+          monitorAssetTag = item.monitor_asset_tag || null;
+
+          // Map the fields as specified
+          document.getElementById("username").value = item.user_name || "";
+          document.getElementById("deptName").value = item.department || "";
+          document.getElementById("dateOfIssue").value =
+            item.date_of_issue || "";
+          document.getElementById("laptop").value = `${item.make || ""} ${
+            item.model || ""
+          }`.trim();
+          document.getElementById("serialNo").value = item.serial_number || "";
+          document.getElementById("configuration").value = `${
+            item.processor || ""
+          } ${item.ram || ""} ${item.hard_disk || ""}`.trim();
+          document.getElementById("accessories").value = item.accessories || "";
+          document.getElementById("assetTag").value =
+            item.machine_asset_tag || "";
+          document.getElementById("issuedPerson").value = item.issued_by || "";
+
+          // Populate checklist form
+          document.getElementById("systemName").value = item.system_name || "";
+          syncChecklistFields();
+
+          // Show the issuing form
+          issuingContainer.classList.add("active");
+          checklistContainer.classList.remove("active");
           checklistContainer.style.display = "none";
           nextBtn.style.display = "block";
           saveBtn.style.display = "none";
           printBtn.style.display = "none";
           backBtn.style.display = "none";
-        }, 500);
 
-        isPrinting = true;
+          // Clean up: Remove the item from localStorage after use
+          localStorage.removeItem("systemAllocationItem");
+          console.log("Cleared systemAllocationItem from localStorage");
+        } catch (error) {
+          console.error(
+            "Error retrieving or parsing item from localStorage:",
+            error
+          );
+          issuingContainer.classList.add("active");
+          checklistContainer.classList.remove("active");
+          checklistContainer.style.display = "none";
+          nextBtn.style.display = "block";
+          saveBtn.style.display = "none";
+          printBtn.style.display = "none";
+          backBtn.style.display = "none";
+        }
       } else {
-        console.error(
-          `No record found for srNo: ${srNoNum} in records array:`,
-          records
+        // Default: Show empty form
+        console.warn(
+          "No system allocation item or print request found in localStorage, showing empty form."
         );
-      }
-
-      // Clean up: Remove the printSrNo from localStorage
-      localStorage.removeItem("printSystemAllocationSrNo");
-      console.log("Cleared printSystemAllocationSrNo from localStorage");
-    } else if (storedItem) {
-      // Handle form generation scenario
-      try {
-        const item = JSON.parse(storedItem);
-        console.log(
-          "Retrieved item from localStorage for form generation:",
-          item
-        );
-
-        // Store keys for updating the record
-        srNo = item.sr_no || null;
-        machineAssetTag = item.machine_asset_tag || null;
-        monitorAssetTag = item.monitor_asset_tag || null;
-
-        // Map the fields as specified
-        document.getElementById("username").value = item.user_name || "";
-        document.getElementById("deptName").value = item.department || "";
-        document.getElementById("dateOfIssue").value = item.date_of_issue || "";
-        document.getElementById("laptop").value = `${item.make || ""} ${item.model || ""}`.trim();
-        document.getElementById("serialNo").value = item.serial_number || "";
-        document.getElementById("configuration").value = `${item.processor || ""} ${item.ram || ""} ${item.hard_disk || ""}`.trim();
-        document.getElementById("accessories").value = item.accessories || "";
-        document.getElementById("assetTag").value = item.machine_asset_tag || "";
-        document.getElementById("issuedPerson").value = item.issued_by || "";
-
-        // Populate checklist form
-        document.getElementById("systemName").value = item.system_name || "";
-        syncChecklistFields();
-
-        // Show the issuing form
-        issuingContainer.classList.add("active");
-        checklistContainer.classList.remove("active");
-        checklistContainer.style.display = "none";
-        nextBtn.style.display = "block";
-        saveBtn.style.display = "none";
-        printBtn.style.display = "none";
-        backBtn.style.display = "none";
-
-        // Clean up: Remove the item from localStorage after use
-        localStorage.removeItem("systemAllocationItem");
-        console.log("Cleared systemAllocationItem from localStorage");
-      } catch (error) {
-        console.error("Error retrieving or parsing item from localStorage:", error);
         issuingContainer.classList.add("active");
         checklistContainer.classList.remove("active");
         checklistContainer.style.display = "none";
@@ -2125,36 +2677,146 @@ if (window.location.pathname.includes("laptop-checklist.html")) {
         printBtn.style.display = "none";
         backBtn.style.display = "none";
       }
-    } else {
-      // Default: Show empty form
-      console.warn(
-        "No system allocation item or print request found in localStorage, showing empty form."
+
+      // Add asterisk to systemName label to indicate it's mandatory
+      const systemNameLabel = checklistForm.querySelector(
+        'label[for="systemName"]'
       );
-      issuingContainer.classList.add("active");
-      checklistContainer.classList.remove("active");
-      checklistContainer.style.display = "none";
-      nextBtn.style.display = "block";
-      saveBtn.style.display = "none";
-      printBtn.style.display = "none";
-      backBtn.style.display = "none";
-    }
+      if (systemNameLabel) {
+        systemNameLabel.innerHTML =
+          'System Name <span style="color: red;">*</span>';
+      }
+      const systemNameInput = document.getElementById("systemName");
+      if (systemNameInput) {
+        systemNameInput.setAttribute("required", "true");
+      }
 
-    // Add asterisk to systemName label to indicate it's mandatory
-    const systemNameLabel = checklistForm.querySelector(
-      'label[for="systemName"]'
-    );
-    if (systemNameLabel) {
-      systemNameLabel.innerHTML =
-        'System Name <span style="color: red;">*</span>';
-    }
-    const systemNameInput = document.getElementById("systemName");
-    if (systemNameInput) {
-      systemNameInput.setAttribute("required", "true");
-    }
+      // Next button handler - only transitions to checklist form
+      nextBtn.addEventListener("click", function () {
+        if (issuingForm.checkValidity()) {
+          syncChecklistFields();
+          issuingContainer.classList.remove("active");
+          checklistContainer.classList.add("active");
+          checklistContainer.style.display = "block";
+          nextBtn.style.display = "none";
+          saveBtn.style.display = "inline-block";
+          printBtn.style.display = "inline-block";
+          backBtn.style.display = "inline-block";
+        } else {
+          issuingForm.reportValidity();
+        }
+      });
 
-    // Next button handler - only transitions to checklist form
-    nextBtn.addEventListener("click", function () {
-      if (issuingForm.checkValidity()) {
+      // Save button handler - updates the database and retains form state
+      saveBtn.addEventListener("click", async function (e) {
+        e.preventDefault();
+
+        // Validate systemName field
+        const systemName = document.getElementById("systemName")?.value.trim();
+        if (!systemName) {
+          showErrorMessage(
+            "System Name is mandatory. Please fill in this field.",
+            checklistContainer
+          );
+          alert("System Name is mandatory. Please fill in this field.");
+          return;
+        }
+
+        // Collect form data
+        const issuingData = {
+          srNo: srNo || srNoCounter++,
+          username: document.getElementById("username")?.value || "",
+          deptName: document.getElementById("deptName")?.value || "",
+          dateOfIssue: document.getElementById("dateOfIssue")?.value || "",
+          laptop: document.getElementById("laptop")?.value || "",
+          serialNo: document.getElementById("serialNo")?.value || "",
+          configuration: document.getElementById("configuration")?.value || "",
+          accessories: document.getElementById("accessories")?.value || "",
+          assetTag: document.getElementById("assetTag")?.value || "",
+          issuedPerson: document.getElementById("issuedPerson")?.value || "",
+        };
+
+        const checklistData = {
+          systemName: systemName,
+          statuses: {},
+        };
+        for (let i = 1; i <= 32; i++) {
+          const statusElement = document.querySelector(
+            `select[name="status${i}"]`
+          );
+          checklistData.statuses[`status${i}`] = statusElement
+            ? statusElement.value
+            : "N/A";
+        }
+
+        const combinedData = { ...issuingData, checklist: checklistData };
+
+        // Update records array
+        const recordIndex = records.findIndex(
+          (r) => r.srNo === combinedData.srNo
+        );
+        if (recordIndex !== -1) {
+          records[recordIndex] = combinedData;
+          console.log("Record updated:", records[recordIndex]);
+        } else {
+          records.push(combinedData);
+          console.log("Record added:", combinedData);
+        }
+        console.log("Current records array:", records);
+
+        // Save records to localStorage
+        try {
+          localStorage.setItem(
+            "systemAllocationRecords",
+            JSON.stringify(records)
+          );
+          console.log("Updated records in localStorage:", records);
+        } catch (error) {
+          console.error("Error saving records to localStorage:", error);
+        }
+
+        // Update the asset in the database if srNo and asset tags are available
+        if (srNo && machineAssetTag && monitorAssetTag) {
+          const updates = {
+            user_name: issuingData.username,
+            department: issuingData.deptName,
+            date_of_issue: issuingData.dateOfIssue || null,
+            accessories: issuingData.accessories,
+          };
+
+          try {
+            const response = await fetch(`${BACKEND_URL}/assets/updateByKey`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                tableType: "systems",
+                key: {
+                  sr_no: srNo,
+                  machine_asset_tag: machineAssetTag,
+                  monitor_asset_tag: monitorAssetTag,
+                },
+                updates: updates,
+              }),
+              credentials: "include",
+            });
+
+            if (!response.ok) {
+              const errorText = await response.text();
+              throw new Error(
+                `Failed to update asset: ${response.status} - ${errorText}`
+              );
+            }
+
+            console.log("Asset updated successfully in the database!");
+          } catch (error) {
+            console.error("Error updating asset in database:", error);
+            alert("Failed to update asset in the database. Please try again.");
+          }
+        }
+
+        // Keep the form state and show checklist section with buttons
         syncChecklistFields();
         issuingContainer.classList.remove("active");
         checklistContainer.classList.add("active");
@@ -2163,165 +2825,53 @@ if (window.location.pathname.includes("laptop-checklist.html")) {
         saveBtn.style.display = "inline-block";
         printBtn.style.display = "inline-block";
         backBtn.style.display = "inline-block";
-      } else {
-        issuingForm.reportValidity();
-      }
-    });
 
-    // Save button handler - updates the database and retains form state
-    saveBtn.addEventListener("click", async function (e) {
-      e.preventDefault();
+        renderSystemAllocationDashboard();
+      });
 
-      // Validate systemName field
-      const systemName = document.getElementById("systemName")?.value.trim();
-      if (!systemName) {
-        showErrorMessage("System Name is mandatory. Please fill in this field.", checklistContainer);
-        alert("System Name is mandatory. Please fill in this field.");
-        return;
-      }
+      printBtn.addEventListener("click", function (e) {
+        e.preventDefault();
 
-      // Collect form data
-      const issuingData = {
-        srNo: srNo || srNoCounter++,
-        username: document.getElementById("username")?.value || "",
-        deptName: document.getElementById("deptName")?.value || "",
-        dateOfIssue: document.getElementById("dateOfIssue")?.value || "",
-        laptop: document.getElementById("laptop")?.value || "",
-        serialNo: document.getElementById("serialNo")?.value || "",
-        configuration: document.getElementById("configuration")?.value || "",
-        accessories: document.getElementById("accessories")?.value || "",
-        assetTag: document.getElementById("assetTag")?.value || "",
-        issuedPerson: document.getElementById("issuedPerson")?.value || "",
-      };
-
-      const checklistData = {
-        systemName: systemName,
-        statuses: {},
-      };
-      for (let i = 1; i <= 32; i++) {
-        const statusElement = document.querySelector(
-          `select[name="status${i}"]`
-        );
-        checklistData.statuses[`status${i}`] = statusElement
-          ? statusElement.value
-          : "N/A";
-      }
-
-      const combinedData = { ...issuingData, checklist: checklistData };
-
-      // Update records array
-      const recordIndex = records.findIndex((r) => r.srNo === combinedData.srNo);
-      if (recordIndex !== -1) {
-        records[recordIndex] = combinedData;
-        console.log("Record updated:", records[recordIndex]);
-      } else {
-        records.push(combinedData);
-        console.log("Record added:", combinedData);
-      }
-      console.log("Current records array:", records);
-
-      // Save records to localStorage
-      try {
-        localStorage.setItem("systemAllocationRecords", JSON.stringify(records));
-        console.log("Updated records in localStorage:", records);
-      } catch (error) {
-        console.error("Error saving records to localStorage:", error);
-      }
-
-      // Update the asset in the database if srNo and asset tags are available
-      if (srNo && machineAssetTag && monitorAssetTag) {
-        const updates = {
-          user_name: issuingData.username,
-          department: issuingData.deptName,
-          date_of_issue: issuingData.dateOfIssue || null,
-          accessories: issuingData.accessories
-        };
-
-        try {
-          const response = await fetch(`${BACKEND_URL}/assets/updateByKey`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              tableType: "systems",
-              key: {
-                sr_no: srNo,
-                machine_asset_tag: machineAssetTag,
-                monitor_asset_tag: monitorAssetTag
-              },
-              updates: updates,
-            }),
-            credentials: "include",
-          });
-
-          if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(
-              `Failed to update asset: ${response.status} - ${errorText}`
-            );
-          }
-
-          console.log("Asset updated successfully in the database!");
-        } catch (error) {
-          console.error("Error updating asset in database:", error);
-          alert("Failed to update asset in the database. Please try again.");
+        // Validate systemName field
+        const systemName = document.getElementById("systemName")?.value.trim();
+        if (!systemName) {
+          showErrorMessage(
+            "System Name is mandatory. Please fill in this field.",
+            checklistContainer
+          );
+          alert("System Name is mandatory. Please fill in this field.");
+          return;
         }
-      }
 
-      // Keep the form state and show checklist section with buttons
-      syncChecklistFields();
-      issuingContainer.classList.remove("active");
-      checklistContainer.classList.add("active");
-      checklistContainer.style.display = "block";
-      nextBtn.style.display = "none";
-      saveBtn.style.display = "inline-block";
-      printBtn.style.display = "inline-block";
-      backBtn.style.display = "inline-block";
+        // Temporarily hide buttons to avoid printing them
+        document
+          .querySelectorAll("button:not(#submitBtn)")
+          .forEach((btn) => (btn.style.display = "none"));
 
-      renderSystemAllocationDashboard();
-    });
+        // Trigger print
+        window.print();
 
-    printBtn.addEventListener("click", function (e) {
-      e.preventDefault();
+        // Restore visibility after printing
+        document
+          .querySelectorAll("button")
+          .forEach((btn) => (btn.style.display = "inline-block"));
+        checklistContainer.style.display = "none";
+        nextBtn.style.display = "block";
+        saveBtn.style.display = "none";
+        printBtn.style.display = "none";
+        backBtn.style.display = "none";
 
-      // Validate systemName field
-      const systemName = document.getElementById("systemName")?.value.trim();
-      if (!systemName) {
-        showErrorMessage("System Name is mandatory. Please fill in this field.", checklistContainer);
-        alert("System Name is mandatory. Please fill in this field.");
-        return;
-      }
+        issuingForm.reset();
+        checklistForm.reset();
+        document.getElementById("checklistUsername").textContent = "";
+        document.getElementById("checklistSerialNo").textContent = "";
+        document.getElementById("checklistAssetTag").textContent = "";
+        issuingContainer.classList.add("active");
+        checklistContainer.classList.remove("active");
+      });
 
-      // Temporarily hide buttons to avoid printing them
-      document
-        .querySelectorAll("button:not(#submitBtn)")
-        .forEach((btn) => (btn.style.display = "none"));
-
-      // Trigger print
-      window.print();
-
-      // Restore visibility after printing
-      document
-        .querySelectorAll("button")
-        .forEach((btn) => (btn.style.display = "inline-block"));
-      checklistContainer.style.display = "none";
-      nextBtn.style.display = "block";
-      saveBtn.style.display = "none";
-      printBtn.style.display = "none";
-      backBtn.style.display = "none";
-
-      issuingForm.reset();
-      checklistForm.reset();
-      document.getElementById("checklistUsername").textContent = "";
-      document.getElementById("checklistSerialNo").textContent = "";
-      document.getElementById("checklistAssetTag").textContent = "";
-      issuingContainer.classList.add("active");
-      checklistContainer.classList.remove("active");
-    });
-
-    // Remove the old submit button's functionality as it's replaced by Save and Print
-    submitBtn.style.display = "none";
+      // Remove the old submit button's functionality as it's replaced by Save and Print
+      submitBtn.style.display = "none";
+    }
   }
-}
 });

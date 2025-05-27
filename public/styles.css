@@ -1108,11 +1108,6 @@ input[type="checkbox"]:hover {
   position: relative;
 }
 
-.action-btn.delete {
-  background: linear-gradient(45deg, #ff4d4d, #ff1a1a);
-  color: #fff;
-}
-
 .action-btn.edit {
   background: linear-gradient(45deg, #00ddeb, #1e90ff);
   color: #fff;
@@ -1133,14 +1128,13 @@ input[type="checkbox"]:hover {
   box-shadow: 0 0 15px rgba(30, 144, 255, 0.5);
 }
 
-/* New styles for the Generate Form button */
 .action-btn.generate-form {
-  background: linear-gradient(45deg, #28a745, #218838);
+  background: linear-gradient(45deg, #8e2de2, #4a00e0);
   color: #fff;
 }
 
 .action-btn.generate-form:hover {
-  background: linear-gradient(45deg, #218838, #28a745);
+  background: linear-gradient(45deg, #4a00e0, #8e2de2);
   box-shadow: 0 0 15px rgba(40, 167, 69, 0.5);
 }
 
@@ -1824,9 +1818,9 @@ body {
   transform: translateY(0);
 }
 
-/* New rules to remove the black line on hover for edit and save buttons */
 #assetDetailModal #editAssetBtn:hover,
-#assetDetailModal #saveAssetBtn:hover {
+#assetDetailModal #saveAssetBtn:hover,
+#assetDetailModal #generateFormBtn:hover {
   border: none !important;
   box-shadow: none !important;
   background: linear-gradient(45deg, #1e90ff, #00ddeb) !important;
@@ -1834,14 +1828,16 @@ body {
   outline: none !important;
 }
 
-#assetDetailModal #saveAssetBtn:hover {
-  background: linear-gradient(45deg, #00b7eb, #1e90ff) !important;
+#assetDetailModal #generateFormBtn:hover {
+  background: linear-gradient(45deg, #4a00e0, #8e2de2) !important;
 }
 
 #assetDetailModal #editAssetBtn::before,
 #assetDetailModal #editAssetBtn::after,
 #assetDetailModal #saveAssetBtn::before,
-#assetDetailModal #saveAssetBtn::after {
+#assetDetailModal #saveAssetBtn::after,
+#assetDetailModal #generateFormBtn::before,
+#assetDetailModal #generateFormBtn::after {
   content: none !important;
 }
 

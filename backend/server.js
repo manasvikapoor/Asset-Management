@@ -159,38 +159,107 @@ app.get("/fetchData/:tableType", async (req, res) => {
   }
 });
 
-app.post("/assets", upload.single("invoice_file"), async (req, res) => {
-  const { tableType, ...assetData } = req.body;
-  const invoiceFile = req.file ? `uploads/${req.file.filename}` : null;
-
-  if (invoiceFile) {
-    assetData.invoice_file = invoiceFile;
+// New endpoint to fetch the last counter for a company
+app.post("/fetchLastCounter", async (req, res) => {
+  const { company, deviceType, tableType, isMachine } = req.body;
+  if (!company || !deviceType || !tableType || isMachine === undefined) {
+    return res.status(400).json({ error: "Company, deviceType, tableType, and isMachine are required" });
   }
-
-  for (const [key, value] of Object.entries(assetData)) {
-    if (key.toLowerCase().includes("date") && value) {
-      const datePattern = /^\d{4}-\d{2}-\d{2}$/;
-      if (!datePattern.test(value)) {
-        console.error(`Invalid date format for ${key}: ${value}`);
-        return res.status(400).send(`Invalid date format for ${key}. Expected YYYY-MM-DD.`);
-      }
-      assetData[key] = value;
-    }
-  }
-
-  const columns = Object.keys(assetData).join(", ");
-  const placeholders = Object.keys(assetData)
-    .map(() => "?")
-    .join(", ");
-  const values = Object.values(assetData);
 
   try {
-    const query = `INSERT INTO ${tableType} (${columns}, create_date, create_time, create_user) VALUES (${placeholders}, CURDATE(), CURTIME(), 'admin')`;
+    const column = isMachine ? "machine_asset_tag" : "monitor_asset_tag";
+    // Query all asset tags for company and device type
+    const [rows] = await pool.query(
+      `SELECT ${column} 
+       FROM ${tableType} 
+       WHERE company = ? 
+       AND ${column} LIKE ? 
+       AND ${column} IS NOT NULL 
+       AND ${column} != 'N/A'`,
+      [company, `%/${deviceType}/%`]
+    );
+
+    let lastCounter = 0;
+    if (rows.length > 0) {
+      // Extract counters
+      const counters = rows.map(row => {
+        const tag = row[column];
+        const parts = tag.split("/");
+        if (parts.length === 4) {
+          const counterPart = parts[3].split(" ")[0]; // Before "SN:"
+          const counter = parseInt(counterPart, 10);
+          return isNaN(counter) ? 0 : counter;
+        }
+        return 0;
+      });
+      lastCounter = Math.max(...counters);
+    }
+
+    res.json({ lastCounter });
+  } catch (error) {
+    console.error("Error fetching last counter:", error);
+    res.status(500).json({ error: "Error fetching last counter" });
+  }
+});
+
+app.post("/assets", upload.single("invoice_file"), async (req, res) => {
+  const tableType = req.body.tableType;
+  const deviceType = req.body.device_type;
+
+  if (!tableType) {
+    return res.status(400).json({ error: "Table type is required" });
+  }
+
+  const validTableTypes = ["systems", "software", "accessories"];
+  if (!validTableTypes.includes(tableType.toLowerCase())) {
+    return res.status(400).json({ error: "Invalid table type" });
+  }
+
+  try {
+    const [columnsResult] = await pool.query(`SHOW COLUMNS FROM ${tableType}`);
+    const validColumns = columnsResult.map((col) => col.Field).filter(
+      (col) => !["create_user", "create_time", "create_date", "change_user", "change_time", "change_date"].includes(col)
+    );
+
+    const data = {};
+    validColumns.forEach((column) => {
+      if (column === "invoice_file") {
+        if (req.file) {
+          data[column] = req.file.path;
+        }
+      } else {
+        data[column] = req.body[column] || null;
+      }
+    });
+
+    // Handle date fields
+    const dateFields = ["machine_date_of_purchase", "monitor_date_of_purchase", "date_of_issue", "date_of_expiry"];
+    dateFields.forEach((field) => {
+      if (data[field] === "null" || !data[field]) {
+        data[field] = null;
+      } else if (data[field]) {
+        const date = new Date(data[field]);
+        if (isNaN(date.getTime())) {
+          return res.status(400).json({ error: `Invalid date format for ${field}` });
+        }
+        data[field] = data[field];
+      }
+    });
+
+    const columns = Object.keys(data).filter((key) => data[key] !== null && key !== "sr_no");
+    const placeholders = columns.map(() => "?").join(", ");
+    const values = columns.map((key) => data[key]);
+
+    const query = `
+      INSERT INTO ${tableType} (${columns.join(", ")})
+      VALUES (${placeholders})
+    `;
+
     const [result] = await pool.query(query, values);
-    res.json({ message: "Asset added successfully", id: result.insertId });
+    res.status(201).json({ message: "Asset added successfully", id: result.insertId });
   } catch (error) {
     console.error("Error adding asset:", error);
-    res.status(500).send("Error adding asset");
+    res.status(500).json({ error: "Error adding asset" });
   }
 });
 
@@ -200,15 +269,33 @@ app.post("/assets/updateByKey", async (req, res) => {
     return res.status(400).send("No fields to update");
   }
 
+  // Define date fields explicitly
+  const dateFields = [
+    "machine_date_of_purchase",
+    "monitor_date_of_purchase",
+    "date_of_issue",
+    "date_of_expiry",
+    "create_date",
+    "change_date",
+  ];
+
+  // Process date fields
   for (const [key, value] of Object.entries(updates)) {
-    if (key.toLowerCase().includes("date") && value) {
-      const datePattern = /^\d{4}-\d{2}-\d{2}$/;
-      if (!datePattern.test(value)) {
-        return res.status(400).send(`Invalid date format for ${key}. Expected YYYY-MM-DD.`);
+    if (dateFields.includes(key)) {
+      if (value === "null" || value === "N/A" || value === "" || value == null) {
+        updates[key] = null; // Convert to null for SQL
+      } else {
+        const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+        if (!datePattern.test(value)) {
+          return res.status(400).send(`Invalid date format for ${key}. Expected YYYY-MM-DD.`);
+        }
+        updates[key] = value; // Valid date, keep as-is
       }
-      updates[key] = value;
     }
   }
+
+  // Log processed updates for debugging
+  console.log("Processed updates:", updates);
 
   const setClause = Object.keys(updates)
     .map((col) => `${col} = ?`)
@@ -228,16 +315,18 @@ app.post("/assets/updateByKey", async (req, res) => {
   try {
     const [columns] = await pool.query(`SHOW COLUMNS FROM ${tableType}`);
     const dateColumns = columns
-      .filter(col => col.Type.includes('date') || col.Type.includes('DATE'))
-      .map(col => col.Field);
-    let selectClause = '*';
+      .filter((col) => col.Type.includes("date") || col.Type.includes("DATE"))
+      .map((col) => col.Field);
+    let selectClause = "*";
     if (dateColumns.length > 0) {
-      const formattedColumns = columns.map(col => {
-        if (dateColumns.includes(col.Field)) {
-          return `DATE_FORMAT(${col.Field}, '%Y-%m-%d') AS ${col.Field}`;
-        }
-        return col.Field;
-      }).join(', ');
+      const formattedColumns = columns
+        .map((col) => {
+          if (dateColumns.includes(col.Field)) {
+            return `DATE_FORMAT(${col.Field}, '%Y-%m-%d') AS ${col.Field}`;
+          }
+          return col.Field;
+        })
+        .join(", ");
       selectClause = formattedColumns;
     }
 
@@ -284,7 +373,7 @@ app.post("/assets/updateByKey", async (req, res) => {
     res.json({ message: "Asset updated successfully" });
   } catch (error) {
     console.error("Error updating asset:", error);
-    res.status(500).send("Error updating asset");
+    res.status(500).send(`Error updating asset: ${error.message}`);
   }
 });
 

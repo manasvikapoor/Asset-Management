@@ -1080,7 +1080,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Map fields to KDS codes for dropdowns
     const dropdownFields = {
-      company: 'COMPANY'
+      company: 'COMPANY',
+      department: 'DEPT'
     };
 
     // Fetch dropdown values for all dropdown fields

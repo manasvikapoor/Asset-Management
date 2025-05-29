@@ -309,7 +309,9 @@ async function fetchLastCounter(company, deviceType, isMachine = true) {
   try {
     const response = await fetch(`${BACKEND_URL}/fetchLastCounter`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({
         company,
         deviceType,
@@ -318,9 +320,13 @@ async function fetchLastCounter(company, deviceType, isMachine = true) {
       }),
       credentials: "include",
     });
-    if (!response.ok) throw new Error("Failed to fetch counter");
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch counter");
+    }
+
     const data = await response.json();
-    return data.lastCounter || 0; // Default to 0 if no assets
+    return data.lastCounter || 0; // Default to 0 if no counter exists
   } catch (error) {
     console.error("Error fetching last counter:", error.message);
     return 0; // Fallback to 0
@@ -329,64 +335,49 @@ async function fetchLastCounter(company, deviceType, isMachine = true) {
 
 // Function to generate asset tag
 async function generateAssetTag(deviceType, isMachine = true) {
-  const companyInput = document
-    .querySelector("#companyInput")
-    ?.value.trim()
-    .toUpperCase();
+  const companyInput = document.querySelector("#companyInput")?.value.trim().toUpperCase();
   const deviceTypeSelect = document.querySelector("#deviceTypeInput")?.value;
   const dateOfPurchaseInput = document.querySelector(
-    isMachine
-      ? "#machine_date_of_purchaseInput"
-      : "#monitor_date_of_purchaseInput"
+    isMachine ? "#machine_date_of_purchaseInput" : "#monitor_date_of_purchaseInput"
   )?.value;
-  const serialInput = document
-    .querySelector(isMachine ? "#serial_numberInput" : "#monitor_serialInput")
-    ?.value.trim()
-    .toUpperCase();
+  const serialInput = document.querySelector(
+    isMachine ? "#serial_numberInput" : "#monitor_serialInput"
+  )?.value.trim().toUpperCase();
   const assetTagInput = document.querySelector(
     isMachine ? "#machine_asset_tagInput" : "#monitor_asset_tagInput"
   );
-
-  if (!assetTagInput) return; // Exit if input field doesn’t exist
-
-  // Check if required fields are filled
-  if (
-    !companyInput ||
-    !deviceTypeSelect ||
-    !dateOfPurchaseInput ||
-    !serialInput
-  ) {
-    assetTagInput.value = "N/A"; // Set to N/A if incomplete
-    return;
-  }
-
-  // Get financial year
-  const financialYear = getFinancialYear(dateOfPurchaseInput);
-  if (!financialYear) {
-    assetTagInput.value = "N/A"; // Invalid date
-    return;
-  }
-
-  // Determine the device type for counter fetching
-  const counterDeviceType = isMachine
-    ? ["Desktop", "Workstation"].includes(deviceTypeSelect)
-      ? "Laptop"
-      : deviceTypeSelect
-    : "Monitor";
-
-  // Fetch the last counter
-  const lastCounter = await fetchLastCounter(
-    companyInput,
-    counterDeviceType,
-    isMachine
+  const assetNoInput = document.querySelector(
+    isMachine ? "#machine_asset_noInput" : "#monitor_asset_noInput"
   );
-  const newCounter = lastCounter + 1;
 
-  // Construct the full asset tag with SN
-  const assetTag = `${companyInput}/${deviceTypeSelect}/${financialYear}/${newCounter} SN:${serialInput}`;
+  if (!assetTagInput || !assetNoInput) return; // Exit if input fields don’t exist
 
-  // Display the full tag
-  assetTagInput.value = assetTag;
+  // Only generate tag/number if all required fields are filled
+  if (companyInput && deviceTypeSelect && dateOfPurchaseInput && serialInput) {
+    // Get financial year
+    const financialYear = getFinancialYear(dateOfPurchaseInput);
+    if (!financialYear) {
+      return; // Skip update if date is invalid
+    }
+
+    // Adjust device type for counter
+    const counterDeviceType = isMachine
+      ? (["Desktop", "Workstation"].includes(deviceTypeSelect) ? "Laptop" : deviceTypeSelect)
+      : "Monitor";
+
+    // Fetch last counter
+    const lastCounter = await fetchLastCounter(companyInput, counterDeviceType, isMachine);
+    const newCounter = lastCounter + 1;
+
+    // Generate base tag (without SN) for asset number
+    const baseTag = `${companyInput}/${deviceTypeSelect}/${financialYear}/${newCounter}`;
+    // Generate full asset tag with SN
+    const assetTag = `${baseTag} SN:${serialInput}`;
+
+    // Set the input fields
+    assetTagInput.value = assetTag;
+    assetNoInput.value = baseTag;
+  }
 }
 
 // Helper function to calculate the width of text
@@ -1049,212 +1040,249 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     async function fetchColumnsForTableType(tableType) {
-      const formButtonContainer = document.getElementById(
-        "formButtonContainer"
-      );
-      if (!tableType) {
-        formContainer.innerHTML = "";
-        formButtonContainer.style.display = "none";
-        return;
+  const formButtonContainer = document.getElementById("formButtonContainer");
+  if (!tableType) {
+    formContainer.innerHTML = "";
+    formButtonContainer.style.display = "none";
+    return;
+  }
+
+  try {
+    const response = await fetch(`${BACKEND_URL}/fetchColumns/${tableType}`, {
+      credentials: "include",
+    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to fetch columns: ${response.status} - ${errorText}`);
+    }
+    const { columns: backendColumns } = await response.json();
+    const nonRequiredFields = nonRequiredFieldsMap[tableType] || [];
+    const lastSrNo = await fetchLastSrNo(tableType);
+    const nextSrNo = lastSrNo + 1;
+
+    formContainer.innerHTML = "";
+
+    const backendColumnSet = new Set(backendColumns);
+    const fieldsToRender =
+      tableType.toLowerCase() === "systems"
+        ? orderedFields
+        : backendColumns.filter(
+            (col) =>
+              ![
+                "create_user",
+                "create_time",
+                "create_date",
+                "change_user",
+                "change_time",
+                "change_date",
+              ].includes(col)
+          );
+
+    // Map fields to KDS codes for dropdowns
+    const dropdownFields = {
+      company: 'COMPANY'
+    };
+
+    // Fetch dropdown values for all dropdown fields
+    const dropdownPromises = Object.entries(dropdownFields).map(async ([field, kdsCode]) => {
+      try {
+        const response = await fetch(`${BACKEND_URL}/kdsFetch/${kdsCode}`, {
+          credentials: "include",
+        });
+        if (!response.ok) {
+          console.warn(`Failed to fetch dropdown values for ${kdsCode}: ${response.status}`);
+          return { field, values: [] };
+        }
+        const data = await response.json();
+        return { field, values: data.values || [] };
+      } catch (error) {
+        console.error(`Error fetching dropdown for ${kdsCode}:`, error.message);
+        return { field, values: [] };
+      }
+    });
+
+    const dropdownData = await Promise.all(dropdownPromises);
+    const dropdownValues = dropdownData.reduce((acc, { field, values }) => {
+      acc[field] = values;
+      return acc;
+    }, {});
+
+    if (tableType.toLowerCase() === "systems") {
+      const deviceTypeDiv = document.createElement("div");
+      deviceTypeDiv.className = "form-group";
+      deviceTypeDiv.id = "deviceTypeGroup";
+
+      const deviceTypeLabel = document.createElement("label");
+      deviceTypeLabel.htmlFor = "deviceTypeInput";
+      deviceTypeLabel.textContent = "Device Type";
+
+      const deviceTypeSelect = document.createElement("select");
+      deviceTypeSelect.id = "deviceTypeInput";
+      deviceTypeSelect.name = "device_type";
+      deviceTypeSelect.required = true;
+
+      const options = [
+        { value: "Laptop", text: "Laptop", default: true },
+        { value: "Monitor", text: "Monitor" },
+        { value: "Desktop", text: "Desktop (Laptop + Monitor)" },
+        { value: "Workstation", text: "Workstation (Laptop + Monitor)" },
+        { value: "All-in-one", text: "All-in-one" },
+      ];
+
+      options.forEach((option) => {
+        const optElement = document.createElement("option");
+        optElement.value = option.value;
+        optElement.textContent = option.text;
+        if (option.default) optElement.selected = true;
+        deviceTypeSelect.appendChild(optElement);
+      });
+
+      deviceTypeDiv.appendChild(deviceTypeLabel);
+      deviceTypeDiv.appendChild(deviceTypeSelect);
+      formContainer.appendChild(deviceTypeDiv);
+
+      deviceTypeSelect.addEventListener("change", function () {
+        updateFieldVisibility(this.value);
+        generateAssetTag(this.value, true);
+        generateAssetTag(this.value, false);
+      });
+    }
+
+    fieldsToRender.forEach((column) => {
+      if (column === "device_type") return;
+
+      const div = document.createElement("div");
+      div.className = "form-group";
+      div.id = `${column}Group`;
+
+      const label = document.createElement("label");
+      label.htmlFor = `${column}Input`;
+      label.textContent = formatColumnName(column);
+
+      let input;
+      if (column in dropdownFields) {
+        // Create dropdown for fields with KDS codes
+        input = document.createElement("select");
+        input.id = `${column}Input`;
+        input.name = column;
+
+        const defaultOption = document.createElement("option");
+        defaultOption.value = "";
+        defaultOption.textContent = `Select ${formatColumnName(column)}`;
+        input.appendChild(defaultOption);
+
+        const values = dropdownValues[column] || [];
+        values.forEach((value) => {
+          const option = document.createElement("option");
+          option.value = value;
+          option.textContent = value;
+          input.appendChild(option);
+        });
+      } else if (column === "invoice_file") {
+        input = document.createElement("input");
+        input.type = "file";
+        input.id = `${column}Input`;
+        input.name = column;
+        input.accept = "application/pdf";
+      } else if (column === "sr_no") {
+        input = document.createElement("input");
+        input.type = "number";
+        input.id = `${column}Input`;
+        input.name = column;
+        input.value = nextSrNo;
+        input.readOnly = true;
+      } else if (
+        column.includes("date_of") ||
+        column.includes("_date_of_purchase")
+      ) {
+        input = document.createElement("input");
+        input.type = "date";
+        input.id = `${column}Input`;
+        input.name = column;
+      } else if (column === "status") {
+        input = document.createElement("select");
+        input.id = `${column}Input`;
+        input.name = column;
+        const statusOptions = ["Active", "Inactive", "Repair", "Scrapped"];
+        statusOptions.forEach((optionText) => {
+          const opt = document.createElement("option");
+          opt.value = optionText;
+          opt.textContent = optionText;
+          input.appendChild(opt);
+        });
+      } else {
+        input = document.createElement("input");
+        input.type = "text";
+        input.id = `${column}Input`;
+        input.name = column;
       }
 
-      try {
-        const response = await fetch(
-          `${BACKEND_URL}/fetchColumns/${tableType}`,
-          {
-            credentials: "include",
-          }
-        );
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(
-            `Failed to fetch columns: ${response.status} - ${errorText}`
-          );
-        }
-        const { columns: backendColumns } = await response.json();
-        const nonRequiredFields = nonRequiredFieldsMap[tableType] || [];
-        const lastSrNo = await fetchLastSrNo(tableType);
-        const nextSrNo = lastSrNo + 1;
+      if (!nonRequiredFields.includes(column)) {
+        input.required = true;
+      } else {
+        input.required = false;
+      }
 
-        formContainer.innerHTML = "";
+      // Handle asset tag and number fields
+      if (
+        column === "machine_asset_tag" ||
+        column === "monitor_asset_tag" ||
+        column === "machine_asset_no" ||
+        column === "monitor_asset_no"
+      ) {
+        input.value = "";
+      }
 
-        const backendColumnSet = new Set(backendColumns);
-        const fieldsToRender =
-          tableType.toLowerCase() === "systems"
-            ? orderedFields
-            : backendColumns.filter(
-                (col) =>
-                  ![
-                    "create_user",
-                    "create_time",
-                    "create_date",
-                    "change_user",
-                    "change_time",
-                    "change_date",
-                  ].includes(col)
-              );
-
-        if (tableType.toLowerCase() === "systems") {
-          const deviceTypeDiv = document.createElement("div");
-          deviceTypeDiv.className = "form-group";
-          deviceTypeDiv.id = "deviceTypeGroup";
-
-          const deviceTypeLabel = document.createElement("label");
-          deviceTypeLabel.htmlFor = "deviceTypeInput";
-          deviceTypeLabel.textContent = "Device Type";
-
-          const deviceTypeSelect = document.createElement("select");
-          deviceTypeSelect.id = "deviceTypeInput";
-          deviceTypeSelect.name = "device_type";
-          deviceTypeSelect.required = true;
-
-          const options = [
-            { value: "Laptop", text: "Laptop", default: true },
-            { value: "Monitor", text: "Monitor" },
-            { value: "Desktop", text: "Desktop (Laptop + Monitor)" },
-            { value: "Workstation", text: "Workstation (Laptop + Monitor)" },
-            { value: "All-in-one", text: "All-in-one" },
-          ];
-
-          options.forEach((option) => {
-            const optElement = document.createElement("option");
-            optElement.value = option.value;
-            optElement.textContent = option.text;
-            if (option.default) optElement.selected = true;
-            deviceTypeSelect.appendChild(optElement);
-          });
-
-          deviceTypeDiv.appendChild(deviceTypeLabel);
-          deviceTypeDiv.appendChild(deviceTypeSelect);
-          formContainer.appendChild(deviceTypeDiv);
-
-          deviceTypeSelect.addEventListener("change", function () {
-            updateFieldVisibility(this.value);
-            // Trigger asset tag generation for both machine and monitor
-            generateAssetTag(this.value, true);
-            generateAssetTag(this.value, false);
-          });
-        }
-
-        fieldsToRender.forEach((column) => {
-          if (column === "device_type") return;
-
-          const div = document.createElement("div");
-          div.className = "form-group";
-          div.id = `${column}Group`;
-
-          const label = document.createElement("label");
-          label.htmlFor = `${column}Input`;
-          label.textContent = formatColumnName(column);
-
-          let input;
-          if (column === "invoice_file") {
-            input = document.createElement("input");
-            input.type = "file";
-            input.id = `${column}Input`;
-            input.name = column;
-            input.accept = "application/pdf";
-          } else if (column === "sr_no") {
-            input = document.createElement("input");
-            input.type = "number";
-            input.id = `${column}Input`;
-            input.name = column;
-            input.value = nextSrNo;
-            input.readOnly = true;
-          } else if (
-            column.includes("date_of") ||
-            column.includes("_date_of_purchase")
-          ) {
-            input = document.createElement("input");
-            input.type = "date";
-            input.id = `${column}Input`;
-            input.name = column;
-          } else if (column === "status") {
-            input = document.createElement("select");
-            input.id = `${column}Input`;
-            input.name = column;
-            const statusOptions = ["Active", "Inactive", "Repair", "Scrapped"];
-            statusOptions.forEach((optionText) => {
-              const opt = document.createElement("option");
-              opt.value = optionText;
-              opt.textContent = optionText;
-              input.appendChild(opt);
-            });
-          } else {
-            input = document.createElement("input");
-            input.type = "text";
-            input.id = `${column}Input`;
-            input.name = column;
-          }
-
-          if (!nonRequiredFields.includes(column)) {
-            input.required = true;
-          } else {
-            input.required = false;
-          }
-
-          // Handle asset tag fields
-          if (
-            column === "machine_asset_tag" ||
-            column === "monitor_asset_tag"
-          ) {
-            input.readOnly = true;
-            input.value = "N/A";
-          }
-
-          // Add event listeners for asset tag generation
+      // Add event listeners for asset tag generation
+      if (
+        column === "company" ||
+        column === "serial_number" ||
+        column === "monitor_serial" ||
+        column === "machine_date_of_purchase" ||
+        column === "monitor_date_of_purchase"
+      ) {
+        input.addEventListener("change", () => {
           if (
             column === "company" ||
             column === "serial_number" ||
+            column === "machine_date_of_purchase"
+          ) {
+            generateAssetTag(
+              document.getElementById("deviceTypeInput")?.value,
+              true
+            );
+          }
+          if (
+            column === "company" ||
             column === "monitor_serial" ||
-            column === "machine_date_of_purchase" ||
             column === "monitor_date_of_purchase"
           ) {
-            input.addEventListener("input", () => {
-              if (
-                column === "company" ||
-                column === "serial_number" ||
-                column === "machine_date_of_purchase"
-              ) {
-                generateAssetTag(
-                  document.getElementById("deviceTypeInput")?.value,
-                  true
-                );
-              }
-              if (
-                column === "company" ||
-                column === "monitor_serial" ||
-                column === "monitor_date_of_purchase"
-              ) {
-                generateAssetTag(
-                  document.getElementById("deviceTypeInput")?.value,
-                  false
-                );
-              }
-            });
+            generateAssetTag(
+              document.getElementById("deviceTypeInput")?.value,
+              false
+            );
           }
-
-          div.appendChild(label);
-          div.appendChild(input);
-          formContainer.appendChild(div);
         });
-
-        if (tableType.toLowerCase() === "systems") {
-          updateFieldVisibility("Laptop");
-        }
-        formButtonContainer.style.display = "block";
-      } catch (error) {
-        console.error(
-          `Error fetching columns for ${tableType}:`,
-          error.message
-        );
-        showErrorMessage(
-          "Failed to load form fields. Please try again.",
-          messageContainer
-        );
-        formButtonContainer.style.display = "none";
       }
+
+      div.appendChild(label);
+      div.appendChild(input);
+      formContainer.appendChild(div);
+    });
+
+    if (tableType.toLowerCase() === "systems") {
+      updateFieldVisibility("Laptop");
     }
+    formButtonContainer.style.display = "block";
+  } catch (error) {
+    console.error(`Error fetching columns for ${tableType}:`, error.message);
+    showErrorMessage(
+      "Failed to load form fields. Please try again.",
+      messageContainer
+    );
+    formButtonContainer.style.display = "none";
+  }
+}
 
     // Function to update field visibility based on device type
     function updateFieldVisibility(deviceType) {
@@ -1291,6 +1319,7 @@ document.addEventListener("DOMContentLoaded", function () {
           let shouldBeRequired = false;
           let defaultValue = "";
 
+          // Handle common fields
           if (
             commonFields.includes(field) &&
             ![
@@ -1310,6 +1339,7 @@ document.addEventListener("DOMContentLoaded", function () {
             shouldBeRequired = !nonRequiredFieldsMap["systems"].includes(field);
           }
 
+          // Handle machine-specific fields
           if (machineSpecificFields.includes(field)) {
             if (isLaptop || isBoth) {
               shouldBeVisible = true;
@@ -1320,6 +1350,7 @@ document.addEventListener("DOMContentLoaded", function () {
             }
           }
 
+          // Handle monitor-specific fields
           if (monitorSpecificFields.includes(field)) {
             if (isMonitor || isBoth) {
               shouldBeVisible = true;
@@ -1330,9 +1361,11 @@ document.addEventListener("DOMContentLoaded", function () {
             }
           }
 
+          // Apply visibility and requirements
           fieldGroup.style.display = shouldBeVisible ? "block" : "none";
           inputElement.required = shouldBeRequired;
 
+          // Set default values for hidden fields
           if (
             !shouldBeVisible &&
             (inputElement.type === "text" || inputElement.type === "date")
@@ -1348,6 +1381,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
       });
 
+      // Ensure always-visible fields
       const alwaysVisibleFields = [
         "sr_no",
         "user_name",
@@ -1382,6 +1416,7 @@ document.addEventListener("DOMContentLoaded", function () {
     // Asset form submission
     assetForm.addEventListener("submit", async function (e) {
       e.preventDefault();
+
       const tableType = tableTypeFilter.value;
       if (!tableType) {
         showErrorMessage("Please select an asset type.", messageContainer);
@@ -1402,6 +1437,7 @@ document.addEventListener("DOMContentLoaded", function () {
         "date_of_expiry",
       ];
 
+      // Process form data
       for (const [key, value] of formData.entries()) {
         if (dateFields.includes(key)) {
           if (!value || value === "" || value === "N/A") {
@@ -1426,6 +1462,7 @@ document.addEventListener("DOMContentLoaded", function () {
         }
       }
 
+      // Adjust fields based on device type
       if (tableType.toLowerCase() === "systems") {
         const isLaptop = deviceType === "Laptop" || deviceType === "All-in-one";
         const isMonitor = deviceType === "Monitor";
@@ -1436,16 +1473,17 @@ document.addEventListener("DOMContentLoaded", function () {
           processedFormData.set("monitor_serial", "0");
           processedFormData.set("monitor_model", "");
           processedFormData.set("monitor_asset_tag", "");
-          processedFormData.append("monitor_asset_no", "");
+          processedFormData.set("monitor_asset_no", "");
         } else if (isMonitor) {
           processedFormData.append("machine_date_of_purchase", "");
           processedFormData.set("serial_number", "0");
           processedFormData.set("model", "");
           processedFormData.set("machine_asset_tag", "");
-          processedFormData.append("machine_asset_no", "");
+          processedFormData.set("machine_asset_no", "");
         }
       }
 
+      // Log form data for debugging
       console.log("Processed FormData:");
       for (const [key, value] of processedFormData.entries()) {
         console.log(`${key}: ${value}`);

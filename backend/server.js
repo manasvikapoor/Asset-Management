@@ -135,6 +135,32 @@ app.post("/logout", (req, res) => {
   res.json({ message: "Logged out successfully" });
 });
 
+
+/* Fetches all dropdown values for the given KDS code.*/
+app.get('/kdsFetch/:kdsCode', async (req, res) => {
+  const { kdsCode } = req.params;
+
+  if (!kdsCode || typeof kdsCode !== 'string') {
+    return res.status(400).json({ error: 'Invalid KDS code' });
+  }
+
+  try {
+    const [rows] = await pool.query(
+      'SELECT value FROM kds_fetch WHERE kds_code = ? and status = "ACTIVE" ORDER BY value ASC',
+      [kdsCode.toUpperCase()]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: `No values found for KDS code: ${kdsCode}` });
+    }
+    const values = rows.map(row => row.value);
+    res.status(200).json({ values });
+  } catch (error) {
+    console.error(`Error fetching dropdown values for ${kdsCode}:`, error.message);
+    res.status(500).json({ error: 'Server error while fetching dropdown values' });
+  }
+});
+
 // Existing routes (fetchColumns, fetchData, assets, etc.) remain unchanged
 app.get("/fetchColumns/:tableType", async (req, res) => {
   const { tableType } = req.params;

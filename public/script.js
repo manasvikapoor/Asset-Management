@@ -1080,8 +1080,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Map fields to KDS codes for dropdowns
     const dropdownFields = {
-      company: 'COMPANY',
-      department: 'DEPT'
+      company: 'COMPANY'
     };
 
     // Fetch dropdown values for all dropdown fields
@@ -1191,7 +1190,6 @@ document.addEventListener("DOMContentLoaded", function () {
         input.id = `${column}Input`;
         input.name = column;
         input.value = nextSrNo;
-        input.readOnly = true;
       } else if (
         column.includes("date_of") ||
         column.includes("_date_of_purchase")

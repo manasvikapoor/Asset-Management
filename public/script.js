@@ -1469,16 +1469,16 @@ document.addEventListener("DOMContentLoaded", function () {
 
         if (isLaptop) {
           processedFormData.append("monitor_date_of_purchase", "");
-          processedFormData.set("monitor_serial", "0");
-          processedFormData.set("monitor_model", "");
-          processedFormData.set("monitor_asset_tag", "");
-          processedFormData.set("monitor_asset_no", "");
+          processedFormData.set("monitor_serial", "N/A");
+          processedFormData.set("monitor_model", "N/A");
+          processedFormData.set("monitor_asset_tag", "N/A");
+          processedFormData.set("monitor_asset_no", "N/A");
         } else if (isMonitor) {
           processedFormData.append("machine_date_of_purchase", "");
-          processedFormData.set("serial_number", "0");
-          processedFormData.set("model", "");
-          processedFormData.set("machine_asset_tag", "");
-          processedFormData.set("machine_asset_no", "");
+          processedFormData.set("serial_number", "N/A");
+          processedFormData.set("model", "N/A");
+          processedFormData.set("machine_asset_tag", "N/A");
+          processedFormData.set("machine_asset_no", "N/A");
         }
       }
 

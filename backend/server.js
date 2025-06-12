@@ -24,7 +24,7 @@ app.use(express.urlencoded({ extended: true }));
 // Configure Multer for file uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, "public/uploads/");
+    cb(null, "uploads/");
   },
   filename: (req, file, cb) => {
     const timestamp = Date.now();
@@ -228,9 +228,18 @@ app.post("/fetchLastCounter", async (req, res) => {
   }
 });
 
+
+// In server.js, update the /assets endpoint
 app.post("/assets", upload.single("invoice_file"), async (req, res) => {
   const tableType = req.body.tableType;
-  const deviceType = req.body.device_type;
+  let deviceType = req.body.device_type; // This variable now correctly holds the value after potential conversion
+
+  // --- EXISTING MODIFICATION FOR device_type (keep this) ---
+  // Convert array device_type to a single string if it's an array
+  if (Array.isArray(deviceType)) {
+    deviceType = deviceType.length > 0 ? deviceType[0] : null;
+  }
+  // --- END EXISTING MODIFICATION FOR device_type ---
 
   if (!tableType) {
     return res.status(400).json({ error: "Table type is required" });
@@ -241,25 +250,53 @@ app.post("/assets", upload.single("invoice_file"), async (req, res) => {
     return res.status(400).json({ error: "Invalid table type" });
   }
 
+  // Validate device_type (this validation now expects a string)
+  if (tableType.toLowerCase() === "systems") {
+    if (!deviceType || typeof deviceType !== "string") {
+      return res.status(400).json({ error: "device_type must be a non-empty string" });
+    }
+    const validDeviceTypes = ["Laptop", "Monitor", "Desktop", "Workstation", "All-in-one"];
+    if (!validDeviceTypes.includes(deviceType)) {
+      return res.status(400).json({ error: "Invalid device_type value" });
+    }
+  }
+
   try {
     const [columnsResult] = await pool.query(`SHOW COLUMNS FROM ${tableType}`);
     const validColumns = columnsResult.map((col) => col.Field).filter(
       (col) => !["create_user", "create_time", "create_date", "change_user", "change_time", "change_date"].includes(col)
     );
 
+    // Remove or comment out these console.logs of raw req.body, they are misleading here.
+    // console.log("Received FormData:");
+    // for (const [key, value] of Object.entries(req.body)) {
+    //   console.log(`${key}: ${value}`);
+    // }
+    if (req.file) {
+      console.log(`invoice_file: ${req.file.path}`);
+    }
+
     const data = {};
     validColumns.forEach((column) => {
       if (column === "invoice_file") {
-        if (req.file) {
-          data[column] = req.file.path;
+        data[column] = req.file ? req.file.path : null;
+      } else if (column === "device_type") { // <--- ADD THIS SPECIFIC HANDLING FOR device_type
+        data[column] = deviceType; // Use the already processed 'deviceType' variable
+      } else if (column === "monitor_date_of_purchase" || column === "machine_date_of_purchase") { // <--- ADD THIS SPECIFIC HANDLING FOR monitor_date_of_purchase
+        let value = req.body[column];
+        if (Array.isArray(value)) {
+          value = (value.length > 0 && value[0] !== '') ? value[0] : null;
         }
-      } else {
-        data[column] = req.body[column] || null;
+        data[column] = value === "" || value === "undefined" ? null : value || null;
+      }
+      else {
+        // For all other columns, use the original logic
+        data[column] = req.body[column] === "" || req.body[column] === "undefined" ? null : req.body[column] || null;
       }
     });
 
-    // Handle date fields
-    const dateFields = ["machine_date_of_purchase", "monitor_date_of_purchase", "date_of_issue", "date_of_expiry"];
+    // Handle other date fields (keep this block)
+    const dateFields = ["machine_date_of_purchase", "date_of_issue", "date_of_expiry"]; // monitor_date_of_purchase handled above
     dateFields.forEach((field) => {
       if (data[field] === "null" || !data[field]) {
         data[field] = null;
@@ -272,7 +309,10 @@ app.post("/assets", upload.single("invoice_file"), async (req, res) => {
       }
     });
 
-    const columns = Object.keys(data).filter((key) => data[key] !== null && key !== "sr_no");
+    // Log data before query
+    console.log("Data to insert:", data);
+
+    const columns = validColumns.filter((key) => key in data);
     const placeholders = columns.map(() => "?").join(", ");
     const values = columns.map((key) => data[key]);
 
@@ -281,11 +321,14 @@ app.post("/assets", upload.single("invoice_file"), async (req, res) => {
       VALUES (${placeholders})
     `;
 
+    console.log("Executing query:", query);
+    console.log("Values:", values);
+
     const [result] = await pool.query(query, values);
     res.status(201).json({ message: "Asset added successfully", id: result.insertId });
   } catch (error) {
-    console.error("Error adding asset:", error);
-    res.status(500).json({ error: "Error adding asset" });
+    console.error("Error adding asset:", error.message);
+    res.status(500).json({ error: `Error adding asset: ${error.message}` });
   }
 });
 
@@ -503,6 +546,14 @@ app.post("/export-excel", async (req, res) => {
     console.error("Error generating Excel file:", error);
     res.status(500).send("Error generating Excel file");
   }
+});
+
+app.use((err, req, res, next) => {
+  if (res.headersSent) {
+    return next(err);
+  }
+  console.error("Unexpected error:", err);
+  res.status(500).json({ error: "Internal server error" });
 });
 
 // Start the server

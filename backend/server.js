@@ -5,23 +5,23 @@ const path = require("path");
 const ExcelJS = require("exceljs");
 const cors = require("cors");
 const fs = require("fs");
-const cookieParser = require("cookie-parser"); // Added for cookie handling
-const { v4: uuidv4 } = require("uuid"); // For generating session IDs
+const cookieParser = require("cookie-parser");
+const { v4: uuidv4 } = require("uuid");
 
 const app = express();
 const port = 3000;
 
-// Middleware to parse JSON, handle CORS, serve static files, and parse cookies
-app.use(express.json());
+// Middleware
+app.use(express.json({ limit: "20mb" }));
 app.use(cors({
-  origin: 'http://localhost:5501', // or whatever port your frontend uses
-  credentials: true // This is important for cookies
+  origin: 'http://localhost:5501',
+  credentials: true
 }));
 app.use(express.static("public"));
-app.use(cookieParser()); // Enable cookie parsing
+app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 
-// Configure Multer for file uploads
+// Multer configuration
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, "uploads/");
@@ -46,7 +46,7 @@ const pool = mysql.createPool({
   timezone: "+05:30",
 });
 
-// Test database connection on startup
+// Test database connection
 (async () => {
   try {
     const connection = await pool.getConnection();
@@ -66,11 +66,10 @@ app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-// Route to handle login and set cookie
+// Login route
 app.post("/login", async (req, res) => {
   const { username, password } = req.body;
   try {
-    // Replace with actual user validation logic
     const [users] = await pool.query(
       "SELECT * FROM users WHERE username = ? AND password = ?",
       [username, password]
@@ -79,14 +78,12 @@ app.post("/login", async (req, res) => {
       return res.status(401).json({ error: "Invalid credentials" });
     }
 
-    // Generate a session ID and store it
     const sessionId = uuidv4();
     await pool.query(
       "INSERT INTO sessions (session_id, username, created_at) VALUES (?, ?, NOW())",
       [sessionId, username]
     );
 
-    // Set a secure, HTTP-only cookie
     res.cookie("sessionId", sessionId, {
       maxAge: 24 * 60 * 60 * 1000,
       httpOnly: true,
@@ -101,7 +98,7 @@ app.post("/login", async (req, res) => {
   }
 });
 
-// Route to check if user is authenticated
+// Check auth route
 app.get("/check-auth", async (req, res) => {
   const sessionId = req.cookies.sessionId;
   if (!sessionId) {
@@ -125,7 +122,7 @@ app.get("/check-auth", async (req, res) => {
   }
 });
 
-// Route to logout and clear cookie
+// Logout route
 app.post("/logout", (req, res) => {
   const sessionId = req.cookies.sessionId;
   if (sessionId) {
@@ -135,8 +132,7 @@ app.post("/logout", (req, res) => {
   res.json({ message: "Logged out successfully" });
 });
 
-
-/* Fetches all dropdown values for the given KDS code.*/
+// KDS fetch route
 app.get('/kdsFetch/:kdsCode', async (req, res) => {
   const { kdsCode } = req.params;
 
@@ -161,7 +157,7 @@ app.get('/kdsFetch/:kdsCode', async (req, res) => {
   }
 });
 
-// Existing routes (fetchColumns, fetchData, assets, etc.) remain unchanged
+// Fetch columns route
 app.get("/fetchColumns/:tableType", async (req, res) => {
   const { tableType } = req.params;
   try {
@@ -174,6 +170,7 @@ app.get("/fetchColumns/:tableType", async (req, res) => {
   }
 });
 
+// Fetch data route
 app.get("/fetchData/:tableType", async (req, res) => {
   const { tableType } = req.params;
   try {
@@ -185,16 +182,15 @@ app.get("/fetchData/:tableType", async (req, res) => {
   }
 });
 
-// New endpoint to fetch the last counter for a company
+// Fetch last counter route
 app.post("/fetchLastCounter", async (req, res) => {
-  const { company, deviceType, tableType, isMachine } = req.body;
-  if (!company || !deviceType || !tableType || isMachine === undefined) {
+  const { company, deviceType, tableType, financialYear, isMachine } = req.body;
+  if (!company || !deviceType || !tableType || !financialYear || isMachine === undefined) {
     return res.status(400).json({ error: "Company, deviceType, tableType, and isMachine are required" });
   }
 
   try {
     const column = isMachine ? "machine_asset_tag" : "monitor_asset_tag";
-    // Query all asset tags for company and device type
     const [rows] = await pool.query(
       `SELECT ${column} 
        FROM ${tableType} 
@@ -202,17 +198,16 @@ app.post("/fetchLastCounter", async (req, res) => {
        AND ${column} LIKE ? 
        AND ${column} IS NOT NULL 
        AND ${column} != 'N/A'`,
-      [company, `%/${deviceType}/%`]
+      [company, `%/${deviceType}/${financialYear}/%`]
     );
 
     let lastCounter = 0;
     if (rows.length > 0) {
-      // Extract counters
       const counters = rows.map(row => {
         const tag = row[column];
         const parts = tag.split("/");
         if (parts.length === 4) {
-          const counterPart = parts[3].split(" ")[0]; // Before "SN:"
+          const counterPart = parts[3].split(" ")[0];
           const counter = parseInt(counterPart, 10);
           return isNaN(counter) ? 0 : counter;
         }
@@ -228,29 +223,19 @@ app.post("/fetchLastCounter", async (req, res) => {
   }
 });
 
-
-// In server.js, update the /assets endpoint
+// Assets route
 app.post("/assets", upload.single("invoice_file"), async (req, res) => {
   const tableType = req.body.tableType;
-  let deviceType = req.body.device_type; // This variable now correctly holds the value after potential conversion
+  let deviceType = req.body.device_type;
 
-  // --- EXISTING MODIFICATION FOR device_type (keep this) ---
-  // Convert array device_type to a single string if it's an array
   if (Array.isArray(deviceType)) {
     deviceType = deviceType.length > 0 ? deviceType[0] : null;
   }
-  // --- END EXISTING MODIFICATION FOR device_type ---
 
   if (!tableType) {
     return res.status(400).json({ error: "Table type is required" });
   }
 
-  const validTableTypes = ["systems", "software", "accessories"];
-  if (!validTableTypes.includes(tableType.toLowerCase())) {
-    return res.status(400).json({ error: "Invalid table type" });
-  }
-
-  // Validate device_type (this validation now expects a string)
   if (tableType.toLowerCase() === "systems") {
     if (!deviceType || typeof deviceType !== "string") {
       return res.status(400).json({ error: "device_type must be a non-empty string" });
@@ -267,11 +252,6 @@ app.post("/assets", upload.single("invoice_file"), async (req, res) => {
       (col) => !["create_user", "create_time", "create_date", "change_user", "change_time", "change_date"].includes(col)
     );
 
-    // Remove or comment out these console.logs of raw req.body, they are misleading here.
-    // console.log("Received FormData:");
-    // for (const [key, value] of Object.entries(req.body)) {
-    //   console.log(`${key}: ${value}`);
-    // }
     if (req.file) {
       console.log(`invoice_file: ${req.file.path}`);
     }
@@ -280,23 +260,20 @@ app.post("/assets", upload.single("invoice_file"), async (req, res) => {
     validColumns.forEach((column) => {
       if (column === "invoice_file") {
         data[column] = req.file ? req.file.path : null;
-      } else if (column === "device_type") { // <--- ADD THIS SPECIFIC HANDLING FOR device_type
-        data[column] = deviceType; // Use the already processed 'deviceType' variable
-      } else if (column === "monitor_date_of_purchase" || column === "machine_date_of_purchase") { // <--- ADD THIS SPECIFIC HANDLING FOR monitor_date_of_purchase
+      } else if (column === "device_type") {
+        data[column] = deviceType;
+      } else if (column === "monitor_date_of_purchase" || column === "machine_date_of_purchase") {
         let value = req.body[column];
         if (Array.isArray(value)) {
           value = (value.length > 0 && value[0] !== '') ? value[0] : null;
         }
         data[column] = value === "" || value === "undefined" ? null : value || null;
-      }
-      else {
-        // For all other columns, use the original logic
+      } else {
         data[column] = req.body[column] === "" || req.body[column] === "undefined" ? null : req.body[column] || null;
       }
     });
 
-    // Handle other date fields (keep this block)
-    const dateFields = ["machine_date_of_purchase", "date_of_issue", "date_of_expiry"]; // monitor_date_of_purchase handled above
+    const dateFields = ["machine_date_of_purchase", "date_of_issue", "warranty_end_date"];
     dateFields.forEach((field) => {
       if (data[field] === "null" || !data[field]) {
         data[field] = null;
@@ -309,7 +286,6 @@ app.post("/assets", upload.single("invoice_file"), async (req, res) => {
       }
     });
 
-    // Log data before query
     console.log("Data to insert:", data);
 
     const columns = validColumns.filter((key) => key in data);
@@ -332,38 +308,36 @@ app.post("/assets", upload.single("invoice_file"), async (req, res) => {
   }
 });
 
+// Update asset route
 app.post("/assets/updateByKey", async (req, res) => {
   const { tableType, key, updates } = req.body;
   if (!updates || Object.keys(updates).length === 0) {
     return res.status(400).send("No fields to update");
   }
 
-  // Define date fields explicitly
   const dateFields = [
     "machine_date_of_purchase",
     "monitor_date_of_purchase",
     "date_of_issue",
-    "date_of_expiry",
+    "warranty_end_date",
     "create_date",
     "change_date",
   ];
 
-  // Process date fields
   for (const [key, value] of Object.entries(updates)) {
     if (dateFields.includes(key)) {
       if (value === "null" || value === "N/A" || value === "" || value == null) {
-        updates[key] = null; // Convert to null for SQL
+        updates[key] = null;
       } else {
         const datePattern = /^\d{4}-\d{2}-\d{2}$/;
         if (!datePattern.test(value)) {
           return res.status(400).send(`Invalid date format for ${key}. Expected YYYY-MM-DD.`);
         }
-        updates[key] = value; // Valid date, keep as-is
+        updates[key] = value;
       }
     }
   }
 
-  // Log processed updates for debugging
   console.log("Processed updates:", updates);
 
   const setClause = Object.keys(updates)
@@ -400,8 +374,7 @@ app.post("/assets/updateByKey", async (req, res) => {
     }
 
     const [rows] = await pool.query(
-      `SELECT ${selectClause} FROM ${tableType} WHERE ${whereClause}`,
-      whereValues
+      `SELECT ${selectClause} FROM ${tableType} WHERE ${whereClause}`, whereValues
     );
     if (rows.length === 0) {
       return res.status(404).send("Asset not found");
@@ -446,6 +419,7 @@ app.post("/assets/updateByKey", async (req, res) => {
   }
 });
 
+// Asset history route
 app.post("/assetHistory", async (req, res) => {
   const { tableType, sr_no, machine_asset_tag, monitor_asset_tag, asset_tag } = req.body;
   if (!tableType || !sr_no) {
@@ -484,15 +458,23 @@ app.post("/assetHistory", async (req, res) => {
   }
 });
 
+// Export Excel route
 app.post("/export-excel", async (req, res) => {
+  console.log("Entered /export-excel endpoint");
+  console.log("Received payload size:", JSON.stringify(req.body).length, "bytes");
+  console.log("Number of rows in payload:", req.body.data ? req.body.data.length : 0);
+  console.log("Sample data (first row):", req.body.data ? JSON.stringify(req.body.data[0]) : "No data");
   const { data } = req.body;
   if (!data || data.length === 0) {
+    console.log("Error: No data provided to export");
     return res.status(400).send("No data provided to export");
   }
 
   try {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet("Assets");
+
+    // Define columns (excluding create/change fields)
     const columns = Object.keys(data[0]).filter(
       (key) =>
         ![
@@ -504,38 +486,165 @@ app.post("/export-excel", async (req, res) => {
           "change_date",
         ].includes(key)
     );
-    worksheet.columns = columns.map((key) => ({
-      header: key
+
+    // Map column keys to display names
+    const displayNames = columns.map((key) =>
+      key
         .split("_")
         .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(" "),
+        .join(" ")
+    );
+
+    // Set column headers at row 6
+    worksheet.getRow(6).values = displayNames;
+    worksheet.getRow(6).font = { bold: true };
+    worksheet.getRow(6).alignment = { vertical: "middle", horizontal: "center" };
+    worksheet.getRow(6).fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "D3D3D3" },
+    };
+
+    // Define worksheet columns
+    worksheet.columns = columns.map((key) => ({
       key,
-      width: 20,
+      width: 10, // Initial width, will be adjusted
     }));
 
-    data.forEach((row) => {
-      const filteredRow = {};
-      columns.forEach((key) => {
-        filteredRow[key] = row[key];
-      });
-      worksheet.addRow(filteredRow);
+    // Add data starting at row 7
+    data.forEach((row, index) => {
+      const rowData = columns.reduce((acc, key) => {
+        acc[key] = row[key] !== undefined ? row[key] : null;
+        return acc;
+      }, {});
+      console.log(`Adding row ${index + 1}:`, rowData);
+      const newRow = worksheet.addRow(rowData);
+      newRow.commit();
     });
 
-    worksheet.getRow(1).font = { bold: true };
-    worksheet.getRow(1).alignment = { vertical: "middle", horizontal: "center" };
-    worksheet.columns.forEach((column) => {
-      let maxLength = column.header.length;
+    // Adjust column widths based on content
+    worksheet.columns.forEach((column, index) => {
+      let maxLength = displayNames[index].length; // Start with header length
       column.eachCell({ includeEmpty: true }, (cell) => {
-        const cellLength = cell.value ? cell.value.toString().length : 0;
-        maxLength = Math.max(maxLength, cellLength);
+        const cellValue = cell.value ? cell.value.toString() : "";
+        maxLength = Math.max(maxLength, cellValue.length);
       });
-      column.width = Math.min(maxLength + 2, 50);
+      column.width = Math.min(Math.max(maxLength + 2, 10), 50); // Minimum 10, maximum 50
     });
+
+    // Add company logo at top-left and merge cells for logo area
+    const logoPath = path.join(__dirname, "..", "frontend", "media", "company-logo.png");
+    console.log("Checking logo at:", logoPath);
+    const lastColumn = columns.length;
+    if (fs.existsSync(logoPath)) {
+      const logoId = workbook.addImage({
+        filename: logoPath,
+        extension: "png",
+      });
+      worksheet.mergeCells(1, 1, 4, 1); // Merge A1:A4 for logo
+      worksheet.addImage(logoId, {
+        tl: { col: 0, row: 0 },
+        ext: { width: 130, height: 80 },
+        editAs: "absolute",
+      });
+      worksheet.getColumn(1).width = Math.max(worksheet.getColumn(1).width || 10, 15);
+      // Clear all properties for logo cell
+      const logoCell = worksheet.getCell(1, 1);
+      logoCell.value = null;
+      logoCell.border = {
+        top: { style: "none" },
+        left: { style: "none" },
+        bottom: { style: "thin" },
+        right: { style: "none" },
+      };
+      logoCell.fill = null;
+      logoCell.style = { font: {}, alignment: {}, protection: {} }; // Reset styles to minimal
+    } else {
+      console.warn("Logo file not found at:", logoPath);
+    }
+
+    // Add title in the center of rows 1-4, excluding the first and last columns
+    const titleStartCol = 2; // Start after the logo column
+    const titleEndCol = lastColumn - 1; // End before the document details column
+    if (titleEndCol >= titleStartCol) {
+      worksheet.mergeCells(1, titleStartCol, 4, titleEndCol);
+      const titleCell = worksheet.getCell(1, titleStartCol);
+      titleCell.value = "IT Inventory Management";
+      titleCell.font = { name: "Calibri", size: 16, bold: true };
+      titleCell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+      titleCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFFF" } };
+      titleCell.border = {
+        top: { style: "none" },
+        left: { style: "none" },
+        bottom: { style: "thin" },
+        right: { style: "none" },
+      };
+    }
+
+    // Add document details at top-right with borders
+    const documentDetails = [
+      "Document Number: ITD-F-003",
+      "Revision Number: 02",
+      "Effective From: 15-JUN-23",
+      "Page Number: 01 of 01",
+    ];
+    const detailsColumn = lastColumn; // Place in the last column
+    for (let row = 1; row <= 4; row++) {
+      const cell = worksheet.getCell(row, detailsColumn);
+      cell.value = documentDetails[row - 1];
+      cell.alignment = { horizontal: "right", vertical: "middle" };
+      cell.font = { name: "Calibri", size: 11 };
+      cell.border = {
+        top: { style: "thin" },
+        left: { style: "thin" },
+        bottom: { style: "thin" },
+        right: { style: "thin" },
+      };
+    }
+
+    // Set bottom border for first 4 rows and clear other borders (except document details and logo)
+    for (let row = 1; row <= 4; row++) {
+      for (let col = 2; col < lastColumn; col++) { // Skip logo (col 1) and document details (lastColumn)
+        const cell = worksheet.getCell(row, col);
+        cell.value = null; // Ensure no residual content
+        cell.border = {
+          top: { style: "none" },
+          left: { style: "none" },
+          bottom: { style: "thin" },
+          right: { style: "none" },
+        };
+        cell.fill = null;
+        cell.style = { font: {}, alignment: {}, protection: {} }; // Reset styles to minimal
+      }
+    }
+
+    // Keep 5th row empty
+    worksheet.getRow(5).height = 20;
+
+    // Freeze first two columns
+    const srNoIndex = columns.indexOf("sr_no");
+    const usernameIndex = columns.indexOf("user_name");
+    if (srNoIndex !== -1 && usernameIndex !== -1) {
+      worksheet.views = [
+        {
+          state: "frozen",
+          xSplit: 2,
+          topLeftCell: "C6",
+        },
+      ];
+    } else {
+      console.warn("sr_no or user_name column not found; skipping freeze panes");
+    }
+
+    // Set dynamic filename with today's date
+    const today = new Date();
+    const dateStr = today.toISOString().split('T')[0].replace(/-/g, '');
+    const filename = `system_inventory_${dateStr}.xlsx`;
 
     const buffer = await workbook.xlsx.writeBuffer();
     res.setHeader(
       "Content-Disposition",
-      "attachment; filename=IT_Inventory_Management.xlsx"
+      `attachment; filename=${filename}`
     );
     res.setHeader(
       "Content-Type",
@@ -548,6 +657,7 @@ app.post("/export-excel", async (req, res) => {
   }
 });
 
+// Error handling middleware
 app.use((err, req, res, next) => {
   if (res.headersSent) {
     return next(err);
@@ -556,7 +666,7 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: "Internal server error" });
 });
 
-// Start the server
+// Start server
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
 });

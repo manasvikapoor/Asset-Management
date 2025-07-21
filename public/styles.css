@@ -714,7 +714,8 @@ body {
   color: rgba(255, 255, 255, 0.9);
   font-size: 0.9em;
   font-weight: normal;
-  margin-bottom: 5px;
+  /* margin-bottom: 5px; */
+  margin-left: 2px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

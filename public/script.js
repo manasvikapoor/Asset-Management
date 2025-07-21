@@ -240,8 +240,8 @@ const primaryKeyFieldsMap = {
 
 // Define non-required fields for each table type
 const nonRequiredFieldsMap = {
-  systems: ["remarks", "date_of_issue", "invoice_number", "invoice_file"],
-  servers: ["remarks", "invoice_number", "invoice_file"],
+  systems: ["remarks", "date_of_issue", "warranty_end_date", "invoice_number", "invoice_file"],
+  servers: ["remarks", "invoice_number", "invoice_file", "warranty_end_date"],
   switch: ["remarks", "invoice_number", "invoice_file"],
   firewall: ["remarks", "invoice_number", "invoice_file"],
   printers_and_scanners: ["remarks", "invoice_number", "invoice_file"],
@@ -304,8 +304,8 @@ function getFinancialYear(dateStr) {
   return `${startYear.toString().slice(-2)}-${endYear.toString().slice(-2)}`;
 }
 
-// Function to fetch the last counter for a company and device type
-async function fetchLastCounter(company, deviceType, isMachine = true) {
+// Function to fetch the last counter for a company, device type and financial year
+async function fetchLastCounter(company, deviceType, financialYear, isMachine = true) {
   try {
     const response = await fetch(`${BACKEND_URL}/fetchLastCounter`, {
       method: "POST",
@@ -315,6 +315,7 @@ async function fetchLastCounter(company, deviceType, isMachine = true) {
       body: JSON.stringify({
         company,
         deviceType,
+        financialYear,
         tableType: "systems",
         isMachine,
       }),
@@ -366,7 +367,7 @@ async function generateAssetTag(deviceType, isMachine = true) {
       : "Monitor";
 
     // Fetch last counter
-    const lastCounter = await fetchLastCounter(companyInput, counterDeviceType, isMachine);
+    const lastCounter = await fetchLastCounter(companyInput, counterDeviceType, financialYear, isMachine);
     const newCounter = lastCounter + 1;
 
     // Generate base tag (without SN) for asset number
@@ -928,7 +929,7 @@ document.addEventListener("DOMContentLoaded", function () {
     "location",
     "make",
     "date_of_issue",
-    "date_of_expiry",
+    "warranty_end_date",
     "OS",
     "processor",
     "RAM",
@@ -978,7 +979,7 @@ document.addEventListener("DOMContentLoaded", function () {
     "monitor_asset_tag", // Monitor Asset Tag
     "location",
     "date_of_issue",
-    "date_of_expiry",
+    "warranty_end_date",
     "operating_system",
     "processor",
     "RAM",
@@ -1191,7 +1192,7 @@ document.addEventListener("DOMContentLoaded", function () {
         input.name = column;
         input.value = nextSrNo;
       } else if (
-        column.includes("date_of") ||
+        column.includes("date") ||
         column.includes("_date_of_purchase")
       ) {
         input = document.createElement("input");
@@ -1433,7 +1434,7 @@ document.addEventListener("DOMContentLoaded", function () {
         "machine_date_of_purchase",
         "monitor_date_of_purchase",
         "date_of_issue",
-        "date_of_expiry",
+        "warranty_end_date"
       ];
 
       // Process form data

@@ -519,6 +519,9 @@ app.post("/export-excel", async (req, res) => {
       }, {});
       console.log(`Adding row ${index + 1}:`, rowData);
       const newRow = worksheet.addRow(rowData);
+      newRow.eachCell({ includeEmpty: true }, (cell) => {
+        cell.alignment = { vertical: "middle", horizontal: "center" };
+      });
       newRow.commit();
     });
 
@@ -529,10 +532,10 @@ app.post("/export-excel", async (req, res) => {
         const cellValue = cell.value ? cell.value.toString() : "";
         maxLength = Math.max(maxLength, cellValue.length);
       });
-      column.width = Math.min(Math.max(maxLength + 2, 10), 50); // Minimum 10, maximum 50
+      column.width = index < 2 ? Math.max(maxLength, 15) : Math.min(maxLength, 50);
     });
 
-    // Add company logo at top-left and merge cells for logo area
+    // Add company logo in merged cells A1:B4
     const logoPath = path.join(__dirname, "..", "frontend", "media", "company-logo.png");
     console.log("Checking logo at:", logoPath);
     const lastColumn = columns.length;
@@ -541,14 +544,14 @@ app.post("/export-excel", async (req, res) => {
         filename: logoPath,
         extension: "png",
       });
-      worksheet.mergeCells(1, 1, 4, 1); // Merge A1:A4 for logo
+      worksheet.mergeCells(1, 1, 4, 2); // Merge A1:B4 for logo
       worksheet.addImage(logoId, {
         tl: { col: 0, row: 0 },
-        ext: { width: 130, height: 80 },
+        ext: { width: 150, height: 80 }, // Adjusted width for two columns
         editAs: "absolute",
       });
-      worksheet.getColumn(1).width = Math.max(worksheet.getColumn(1).width || 10, 15);
-      // Clear all properties for logo cell
+      worksheet.getColumn(1).width = Math.max(worksheet.getColumn(1).width || 15, 15);
+      worksheet.getColumn(2).width = Math.max(worksheet.getColumn(2).width || 15, 15);
       const logoCell = worksheet.getCell(1, 1);
       logoCell.value = null;
       logoCell.border = {
@@ -558,27 +561,10 @@ app.post("/export-excel", async (req, res) => {
         right: { style: "none" },
       };
       logoCell.fill = null;
-      logoCell.style = { font: {}, alignment: {}, protection: {} }; // Reset styles to minimal
+      logoCell.style = { font: {}, alignment: {}, protection: {} }; // Minimal styles
+      console.log("Logo cell set in A1:B4");
     } else {
       console.warn("Logo file not found at:", logoPath);
-    }
-
-    // Add title in the center of rows 1-4, excluding the first and last columns
-    const titleStartCol = 2; // Start after the logo column
-    const titleEndCol = lastColumn - 1; // End before the document details column
-    if (titleEndCol >= titleStartCol) {
-      worksheet.mergeCells(1, titleStartCol, 4, titleEndCol);
-      const titleCell = worksheet.getCell(1, titleStartCol);
-      titleCell.value = "IT Inventory Management";
-      titleCell.font = { name: "Calibri", size: 16, bold: true };
-      titleCell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
-      titleCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFFF" } };
-      titleCell.border = {
-        top: { style: "none" },
-        left: { style: "none" },
-        bottom: { style: "thin" },
-        right: { style: "none" },
-      };
     }
 
     // Add document details at top-right with borders
@@ -602,20 +588,56 @@ app.post("/export-excel", async (req, res) => {
       };
     }
 
-    // Set bottom border for first 4 rows and clear other borders (except document details and logo)
+    // Clear all borders and content for header rows (except logo, title, and document details)
     for (let row = 1; row <= 4; row++) {
-      for (let col = 2; col < lastColumn; col++) { // Skip logo (col 1) and document details (lastColumn)
+      for (let col = 1; col <= lastColumn; col++) {
+        if ((col === 1 || col === 2) || col === detailsColumn) {
+          continue; // Skip logo (A1:B4) and document details
+        }
         const cell = worksheet.getCell(row, col);
-        cell.value = null; // Ensure no residual content
+        cell.value = null;
         cell.border = {
           top: { style: "none" },
           left: { style: "none" },
-          bottom: { style: "thin" },
+          bottom: { style: "none" }, // Will set bottom border later
           right: { style: "none" },
         };
         cell.fill = null;
-        cell.style = { font: {}, alignment: {}, protection: {} }; // Reset styles to minimal
+        cell.style = { font: {}, alignment: {}, protection: {} }; // Minimal styles
       }
+    }
+
+    // Merge remaining cells for title (from column C to lastColumn-1, rows 1-4)
+    const titleStartCol = 3; // Start at column C
+    const titleEndCol = lastColumn - 1; // End before the document details column
+    if (titleEndCol >= titleStartCol) {
+      console.log(`Merging cells for title: C1 to ${String.fromCharCode(64 + titleEndCol)}4`);
+      worksheet.mergeCells(1, titleStartCol, 4, titleEndCol);
+      const titleCell = worksheet.getCell(1, titleStartCol);
+      titleCell.value = "IT Inventory Management";
+      titleCell.font = { name: "Calibri", size: 16, bold: true };
+      titleCell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+      titleCell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFFF" } };
+      titleCell.border = {
+        top: { style: "none" },
+        left: { style: "none" },
+        bottom: { style: "none" }, // Will set bottom border later
+        right: { style: "none" },
+      };
+      console.log("Title cell set:", titleCell.value, "at C1");
+    } else {
+      console.warn("Not enough columns to merge for title");
+    }
+
+    // Explicitly set bottom border for all cells in row 4
+    for (let col = 1; col <= lastColumn; col++) {
+      const cell = worksheet.getCell(4, col);
+      cell.border = {
+        top: cell.border?.top || { style: "none" },
+        left: cell.border?.left || { style: "none" },
+        bottom: { style: "thin" },
+        right: cell.border?.right || { style: "none" },
+      };
     }
 
     // Keep 5th row empty
@@ -629,7 +651,8 @@ app.post("/export-excel", async (req, res) => {
         {
           state: "frozen",
           xSplit: 2,
-          topLeftCell: "C6",
+          ySplit: 6,
+          topLeftCell: "C7",
         },
       ];
     } else {

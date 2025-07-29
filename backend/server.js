@@ -661,8 +661,9 @@ app.post("/export-excel", async (req, res) => {
 
     // Set dynamic filename with today's date
     const today = new Date();
-    const dateStr = today.toISOString().split('T')[0].replace(/-/g, '');
-    const filename = `system_inventory_${dateStr}.xlsx`;
+    const pad = (num) => num.toString().padStart(2, "0");
+    const dateStr = `${pad(today.getDate())}/${pad(today.getMonth() + 1)}/${today.getFullYear()}`;
+    const filename = `System Inventory - ${dateStr}.xlsx`;
 
     const buffer = await workbook.xlsx.writeBuffer();
     res.setHeader(

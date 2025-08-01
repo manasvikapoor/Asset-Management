@@ -458,6 +458,21 @@ app.post("/assetHistory", async (req, res) => {
   }
 });
 
+// Fetch status counts for systems table
+app.get("/status-counts", async (req, res) => {
+  try {
+    const [rows] = await pool.query(`
+      SELECT status, COUNT(*) as count
+      FROM systems
+      GROUP BY status
+    `);
+    res.json(rows);
+  } catch (error) {
+    console.error("Error fetching status counts:", error);
+    res.status(500).json({ error: "Error fetching status counts" });
+  }
+});
+
 // Export Excel route
 app.post("/export-excel", async (req, res) => {
   console.log("Entered /export-excel endpoint");

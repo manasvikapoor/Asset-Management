@@ -874,6 +874,21 @@ function printSystemAllocationRecord(srNo) {
 // Wait for DOM to be fully loaded
 document.addEventListener("DOMContentLoaded", function () {
   console.log("DOMContentLoaded event fired");
+  console.log("Current pathname:", window.location.pathname);
+  console.log("Current URL:", window.location.href);
+  // Check if on dashboard page
+  const isDashboardPage =
+    window.location.pathname.includes("dashboard.html") ||
+    window.location.pathname.endsWith("/dashboard") ||
+    window.location.pathname.includes("/public/views/dashboard.html") ||
+    window.location.pathname === "/";
+  console.log("Is dashboard page?", isDashboardPage);
+  if (isDashboardPage) {
+    console.log("Detected dashboard page, calling renderStatusTiles");
+    renderStatusTiles();
+  } else {
+    console.log("Not on dashboard page, skipping renderStatusTiles");
+  }
 
   const dashboard = document.querySelector(".dashboard");
   if (dashboard) {
@@ -1113,6 +1128,7 @@ document.addEventListener("DOMContentLoaded", function () {
         // Map fields to KDS codes for dropdowns
         const dropdownFields = {
           company: "COMPANY",
+          status: "STATUS",
         };
 
         // Fetch dropdown values for all dropdown fields
@@ -2389,6 +2405,81 @@ document.addEventListener("DOMContentLoaded", function () {
       });
     } else {
       console.error("Edit or Save button not found");
+    }
+  }
+
+  async function renderStatusTiles() {
+    const statusTilesContainer = document.getElementById("status-tiles");
+    if (!statusTilesContainer) {
+      console.error(
+        "Status tiles container (#status-tiles) not found in dashboard.html DOM"
+      );
+      return;
+    }
+
+    try {
+      console.log(
+        "Attempting to fetch status counts from:",
+        `${BACKEND_URL}/status-counts`
+      );
+      console.log("BACKEND_URL:", BACKEND_URL);
+      console.log("Credentials included:", true);
+      console.log("Current cookies:", document.cookie);
+
+      const response = await fetch(`${BACKEND_URL}/status-counts`, {
+        method: "GET",
+        // credentials: "include", // Ensure cookies are sent for authentication
+        headers: {
+          Accept: "application/json",
+          "Cache-Control": "no-cache", // Prevent caching issues
+        },
+      });
+
+      console.log("Response received:", {
+        status: response.status,
+        statusText: response.statusText,
+        url: response.url,
+        headers: Object.fromEntries(response.headers.entries()),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(
+          `Failed to fetch status counts: ${response.status} - ${response.statusText} - ${errorText}`
+        );
+      }
+
+      const statusCounts = await response.json();
+      console.log("Parsed status counts:", statusCounts);
+
+      statusTilesContainer.innerHTML = ""; // Clear existing content
+
+      if (!Array.isArray(statusCounts) || statusCounts.length === 0) {
+        console.warn(
+          "No status data received or data is not an array:",
+          statusCounts
+        );
+        statusTilesContainer.innerHTML =
+          '<p class="empty-message">No status data available</p>';
+        return;
+      }
+
+      statusCounts.forEach(({ status, count }) => {
+        if (status && count !== undefined) {
+          const tile = document.createElement("div");
+          tile.className = "stat-card";
+          tile.innerHTML = `
+          <h3>${status}</h3>
+          <p>${count}</p>
+        `;
+          statusTilesContainer.appendChild(tile);
+        } else {
+          console.warn("Invalid status count entry:", { status, count });
+        }
+      });
+    } catch (error) {
+      console.error("Error in renderStatusTiles:", error.message, error.stack);
+      statusTilesContainer.innerHTML = `<p class="empty-message">Error loading status data: ${error.message}</p>`;
     }
   }
 
